@@ -27,8 +27,7 @@ jobs:
               --base main \
               --head "$BRANCH" \
               --title "Automated PR: $BRANCH -> main" \
-              --body "Automatisch erzeugte PR fuer den Branch \
-$BRANCH. Nach erfolgreichen Checks wird Auto-Merge aktiviert."
+              --body "Automatisch erzeugte PR fuer den Branch $BRANCH. Nach erfolgreichen Checks wird Auto-Merge aktiviert."
             pr_number="$(gh pr list --base main --head "$BRANCH" --json number --jq '.[0].number // empty')"
           fi
 
