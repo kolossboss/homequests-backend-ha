@@ -1,0 +1,160 @@
+refresh:
+  name: Daten aktualisieren
+  description: Startet sofort einen neuen Datenabruf beim HomeQuests-Backend.
+  fields:
+    entry_id:
+      name: Config Entry ID
+      description: Optional, wenn mehrere HomeQuests-Integrationen eingerichtet sind.
+      example: 01JABCDEF1234567890
+      selector:
+        text:
+
+review_task:
+  name: Aufgabe prüfen
+  description: Bestätigt oder lehnt eine eingereichte Aufgabe ab.
+  fields:
+    entry_id:
+      name: Config Entry ID
+      description: Optional, wenn mehrere HomeQuests-Integrationen eingerichtet sind.
+      selector:
+        text:
+    task_id:
+      name: Aufgaben-ID
+      required: true
+      selector:
+        number:
+          min: 1
+          mode: box
+    decision:
+      name: Entscheidung
+      required: true
+      selector:
+        select:
+          options:
+            - approved
+            - rejected
+    comment:
+      name: Kommentar
+      selector:
+        text:
+
+review_missed_task:
+  name: Nicht erledigte Aufgabe prüfen
+  description: Bearbeitet eine als nicht erledigt gemeldete Aufgabe.
+  fields:
+    entry_id:
+      name: Config Entry ID
+      selector:
+        text:
+    task_id:
+      name: Aufgaben-ID
+      required: true
+      selector:
+        number:
+          min: 1
+          mode: box
+    action:
+      name: Aktion
+      required: true
+      selector:
+        select:
+          options:
+            - delete
+            - penalty
+    comment:
+      name: Kommentar
+      selector:
+        text:
+
+review_redemption:
+  name: Belohnungsanfrage prüfen
+  description: Bestätigt oder lehnt eine Belohnungsanfrage ab.
+  fields:
+    entry_id:
+      name: Config Entry ID
+      selector:
+        text:
+    redemption_id:
+      name: Einlösungs-ID
+      required: true
+      selector:
+        number:
+          min: 1
+          mode: box
+    decision:
+      name: Entscheidung
+      required: true
+      selector:
+        select:
+          options:
+            - approved
+            - rejected
+    comment:
+      name: Kommentar
+      selector:
+        text:
+
+adjust_points:
+  name: Punkte anpassen
+  description: Bucht Punkte manuell auf einen Benutzer.
+  fields:
+    entry_id:
+      name: Config Entry ID
+      selector:
+        text:
+    user_id:
+      name: Benutzer-ID
+      required: true
+      selector:
+        number:
+          min: 1
+          mode: box
+    points_delta:
+      name: Punkte-Differenz
+      required: true
+      selector:
+        number:
+          min: -9999
+          max: 9999
+          mode: box
+    description:
+      name: Beschreibung
+      required: true
+      selector:
+        text:
+
+submit_task:
+  name: Aufgabe einreichen
+  description: Reicht eine Aufgabe im Namen des konfigurierten Benutzers ein.
+  fields:
+    entry_id:
+      name: Config Entry ID
+      selector:
+        text:
+    task_id:
+      name: Aufgaben-ID
+      required: true
+      selector:
+        number:
+          min: 1
+          mode: box
+    note:
+      name: Notiz
+      selector:
+        text:
+
+report_task_missed:
+  name: Aufgabe als nicht erledigt melden
+  description: Meldet eine überfällige Aufgabe als nicht erledigt.
+  fields:
+    entry_id:
+      name: Config Entry ID
+      selector:
+        text:
+    task_id:
+      name: Aufgaben-ID
+      required: true
+      selector:
+        number:
+          min: 1
+          mode: box

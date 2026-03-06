@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create distribution zip
+        run: |
+          zip -r homequests-backend-ha.zip \
+            custom_components \
+            hacs.json \
+            README.md \
+            docs \
+            examples
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: homequests-backend-ha.zip
+          generate_release_notes: true

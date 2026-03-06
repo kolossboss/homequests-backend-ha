@@ -1,0 +1,35 @@
+type: vertical-stack
+cards:
+  - type: entities
+    title: HomeQuests Familie
+    entities:
+      - entity: sensor.homequests_offene_aufgaben
+      - entity: sensor.homequests_aufgaben_in_prufung
+      - entity: sensor.homequests_uberfallige_aufgaben
+      - entity: sensor.homequests_offene_belohnungsanfragen
+      - entity: binary_sensor.homequests_hat_offene_aufgaben_freigaben
+      - entity: button.homequests_jetzt_aktualisieren
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: entities
+        title: Kind 1
+        entities:
+          - entity: sensor.kind_1_punktestand
+          - entity: sensor.kind_1_verfugbare_aufgaben
+          - entity: sensor.kind_1_heute_fallige_aufgaben
+          - entity: sensor.kind_1_uberfallige_aufgaben
+          - entity: binary_sensor.kind_1_hat_uberfallige_aufgaben
+      - type: entities
+        title: Kind 2
+        entities:
+          - entity: sensor.kind_2_punktestand
+          - entity: sensor.kind_2_verfugbare_aufgaben
+          - entity: sensor.kind_2_heute_fallige_aufgaben
+          - entity: sensor.kind_2_uberfallige_aufgaben
+          - entity: binary_sensor.kind_2_hat_uberfallige_aufgaben
+  - type: markdown
+    content: >-
+      Nutze Automationen auf `homequests_event`, um Push-Nachrichten oder Ansagen bei neuen
+      Freigaben und Sonderaufgaben ausgeloest zu bekommen.

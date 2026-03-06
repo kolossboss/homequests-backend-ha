@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HomeQuests verbinden",
+        "description": "Verbinde Home Assistant mit deinem HomeQuests-Backend.",
+        "data": {
+          "base_url": "Backend-URL",
+          "username": "Benutzername oder E-Mail",
+          "password": "Passwort"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Anmeldung erneuern",
+        "description": "Die gespeicherten Zugangsdaten für {family_name} sind nicht mehr gültig.",
+        "data": {
+          "username": "Benutzername oder E-Mail",
+          "password": "Passwort"
+        }
+      },
+      "reconfigure": {
+        "title": "HomeQuests neu konfigurieren",
+        "data": {
+          "base_url": "Backend-URL",
+          "username": "Benutzername oder E-Mail",
+          "password": "Passwort"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zum Backend fehlgeschlagen.",
+      "invalid_auth": "Anmeldung fehlgeschlagen.",
+      "no_family": "Für diesen Benutzer wurde keine Familie gefunden.",
+      "unknown": "Unerwarteter Fehler."
+    },
+    "abort": {
+      "already_configured": "Diese HomeQuests-Familie ist bereits eingerichtet.",
+      "reauth_successful": "Die Zugangsdaten wurden aktualisiert.",
+      "reconfigure_successful": "Die Integration wurde aktualisiert."
+    }
+  }
+}
