@@ -6,7 +6,6 @@ from typing import Any
 from urllib.parse import urljoin
 
 from aiohttp import ClientError, ClientResponseError, ClientSession
-from async_timeout import timeout
 
 from .const import REQUEST_TIMEOUT
 
@@ -208,7 +207,7 @@ class HomeQuestsClient:
 
         url = urljoin(f"{self._base_url}/", path.lstrip("/"))
         try:
-            async with timeout(REQUEST_TIMEOUT):
+            async with asyncio.timeout(REQUEST_TIMEOUT):
                 async with self._session.request(method, url, json=json_body, headers=headers) as response:
                     if response.status in {401, 403}:
                         detail = await _response_detail(response)

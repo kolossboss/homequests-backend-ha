@@ -32,6 +32,7 @@ from .const import (
 from .coordinator import HomeQuestsDataUpdateCoordinator, HomeQuestsRuntimeData
 
 _LOGGER = logging.getLogger(__name__)
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 SERVICE_SCHEMAS = {
     SERVICE_REFRESH: vol.Schema({vol.Optional(CONF_ENTRY_ID): cv.string}),
