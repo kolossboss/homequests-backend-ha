@@ -4,10 +4,11 @@ from datetime import timedelta
 
 DOMAIN = "homequests"
 NAME = "HomeQuests"
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 ISSUE_URL = "https://github.com/kolossboss/homequests-backend-ha/issues"
 
 CONF_BASE_URL = "base_url"
+CONF_ENTRY_ID = "entry_id"
 CONF_FAMILY_ID = "family_id"
 CONF_FAMILY_NAME = "family_name"
 CONF_PASSWORD = "password"

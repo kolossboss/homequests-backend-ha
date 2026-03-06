@@ -7,7 +7,6 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_ENTRY_ID
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers import aiohttp_client, config_validation as cv
@@ -16,6 +15,7 @@ from homeassistant.helpers.typing import ConfigType
 from .api import HomeQuestsApiError, HomeQuestsAuthError, HomeQuestsClient, HomeQuestsConnectionError
 from .const import (
     CONF_BASE_URL,
+    CONF_ENTRY_ID,
     CONF_FAMILY_ID,
     CONF_PASSWORD,
     CONF_USERNAME,
