@@ -1,0 +1,55 @@
+name: Codex PR Automation
+
+on:
+  push:
+    branches:
+      - "codex/**"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  open_or_update_pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure PR exists for codex branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          pr_number="$(gh pr list --base main --head "$BRANCH" --json number --jq '.[0].number // empty')"
+
+          if [ -z "$pr_number" ]; then
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "Automated PR: $BRANCH -> main" \
+              --body "Automatisch erzeugte PR fuer den Branch \
+$BRANCH. Nach erfolgreichen Checks wird Auto-Merge aktiviert."
+            pr_number="$(gh pr list --base main --head "$BRANCH" --json number --jq '.[0].number // empty')"
+          fi
+
+          if [ -n "$pr_number" ]; then
+            gh pr edit "$pr_number" --add-label "automerge" || true
+          fi
+
+  enable_auto_merge:
+    runs-on: ubuntu-latest
+    needs: open_or_update_pr
+    steps:
+      - name: Enable auto-merge for codex PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          pr_number="$(gh pr list --base main --head "$BRANCH" --json number --jq '.[0].number // empty')"
+          if [ -z "$pr_number" ]; then
+            echo "No PR found for branch $BRANCH"
+            exit 0
+          fi
+
+          gh pr merge "$pr_number" --auto --squash --delete-branch || true

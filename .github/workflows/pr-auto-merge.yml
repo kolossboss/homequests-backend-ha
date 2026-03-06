@@ -1,0 +1,22 @@
+name: PR Auto Merge
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review, labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto_merge_codex:
+    if: startsWith(github.head_ref, 'codex/') && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable auto-merge for codex PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          gh pr merge "$PR_NUMBER" --auto --squash --delete-branch || true
