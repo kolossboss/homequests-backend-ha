@@ -4,7 +4,7 @@ from datetime import timedelta
 
 DOMAIN = "homequests"
 NAME = "HomeQuests"
-VERSION = "0.1.6"
+VERSION = "0.1.7"
 ISSUE_URL = "https://github.com/kolossboss/homequests-backend-ha/issues"
 
 CONF_BASE_URL = "base_url"
