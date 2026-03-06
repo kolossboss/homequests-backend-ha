@@ -37,6 +37,7 @@ _LOGGER = logging.getLogger(__name__)
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 DATA_FRONTEND_REGISTERED = f"{DOMAIN}_frontend_registered"
 FRONTEND_STATIC_URL_PATH = "/homequests_frontend"
+FRONTEND_HACS_ALIAS_PATH = "/hacsfiles/homequests-backend-ha"
 FRONTEND_DIRECTORY_NAME = "frontend"
 
 SERVICE_SCHEMAS = {
@@ -96,6 +97,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    await _async_register_frontend_assets(hass)
     session = aiohttp_client.async_get_clientsession(hass)
     api = HomeQuestsClient(
         session=session,
@@ -269,13 +271,17 @@ async def _async_register_frontend_assets(hass: HomeAssistant) -> None:
     if not frontend_path.exists():
         return
 
+    static_path_configs = [
+        StaticPathConfig(FRONTEND_STATIC_URL_PATH, str(frontend_path), cache_headers=False),
+        StaticPathConfig(FRONTEND_HACS_ALIAS_PATH, str(frontend_path), cache_headers=False),
+    ]
+
     try:
         if hasattr(hass.http, "async_register_static_paths"):
-            await hass.http.async_register_static_paths(
-                [StaticPathConfig(FRONTEND_STATIC_URL_PATH, str(frontend_path), cache_headers=False)]
-            )
+            await hass.http.async_register_static_paths(static_path_configs)
         else:
             hass.http.register_static_path(FRONTEND_STATIC_URL_PATH, str(frontend_path), cache_headers=False)
+            hass.http.register_static_path(FRONTEND_HACS_ALIAS_PATH, str(frontend_path), cache_headers=False)
     except Exception as err:  # pragma: no cover - defensive
         _LOGGER.warning("HomeQuests frontend assets konnten nicht registriert werden: %s", err)
         return

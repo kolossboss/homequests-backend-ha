@@ -88,7 +88,8 @@ Pro Kind:
 ### Lovelace Karte
 
 - Custom Card Typ: `custom:homequests-overview-card`
-- Resource-URL: `/homequests_frontend/homequests-overview-card.js` (Typ `JavaScript-Modul`)
+- Resource-URL (empfohlen): `/hacsfiles/homequests-backend-ha/homequests-overview-card.js` (Typ `JavaScript-Modul`)
+- Alternative Resource-URL: `/homequests_frontend/homequests-overview-card.js`
 - Kachel-Design mit globalen Werten plus pro Kind:
   - Punkte
   - Heute faellige Aufgaben (0 = gruen, 1-2 = orange, >2 = rot)
