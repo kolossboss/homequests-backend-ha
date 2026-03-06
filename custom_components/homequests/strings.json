@@ -10,6 +10,13 @@
           "password": "Passwort"
         }
       },
+      "family": {
+        "title": "Familie auswählen",
+        "description": "Mehrere Familien gefunden. Wähle die Familie für diesen Home-Assistant-Eintrag.",
+        "data": {
+          "family_id": "Familie"
+        }
+      },
       "reauth_confirm": {
         "title": "Anmeldung erneuern",
         "description": "Die gespeicherten Zugangsdaten für {family_name} sind nicht mehr gültig.",
@@ -31,6 +38,7 @@
       "cannot_connect": "Verbindung zum Backend fehlgeschlagen.",
       "invalid_auth": "Anmeldung fehlgeschlagen.",
       "no_family": "Für diesen Benutzer wurde keine Familie gefunden.",
+      "unknown_family": "Die ausgewählte Familie ist nicht mehr verfügbar.",
       "unknown": "Unerwarteter Fehler."
     },
     "abort": {

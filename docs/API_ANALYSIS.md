@@ -40,6 +40,7 @@
 
 - `GET /families/my`
 - `GET /families/{family_id}/members`
+- Hinweis fuer die HA-Integration: Wenn `GET /families/my` mehrere Familien liefert, wird die Ziel-Familie im Config Flow explizit ausgewaehlt.
 
 Mitgliedsdaten:
 - `membership_id`

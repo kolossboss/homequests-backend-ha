@@ -4,7 +4,7 @@ from datetime import timedelta
 
 DOMAIN = "homequests"
 NAME = "HomeQuests"
-VERSION = "0.1.3"
+VERSION = "0.1.5"
 ISSUE_URL = "https://github.com/kolossboss/homequests-backend-ha/issues"
 
 CONF_BASE_URL = "base_url"
@@ -34,6 +34,12 @@ EVENT_NEW_AVAILABLE_TASKS = "new_available_tasks"
 EVENT_TASKS_SUBMITTED = "tasks_submitted"
 EVENT_REWARD_REQUESTS_PENDING = "reward_requests_pending"
 EVENT_SPECIAL_TASKS_AVAILABLE = "special_tasks_available"
+HOMEQUESTS_EVENT_TYPES = (
+    EVENT_NEW_AVAILABLE_TASKS,
+    EVENT_TASKS_SUBMITTED,
+    EVENT_REWARD_REQUESTS_PENDING,
+    EVENT_SPECIAL_TASKS_AVAILABLE,
+)
 
 SERVICE_ADJUST_POINTS = "adjust_points"
 SERVICE_REFRESH = "refresh"
@@ -51,7 +57,7 @@ TASK_STATUS_REJECTED = "rejected"
 
 ROLE_CHILD = "child"
 
-PLATFORMS = ["sensor", "binary_sensor", "button"]
+PLATFORMS = ["sensor", "binary_sensor", "button", "event", "todo", "calendar"]
 
 REDACT_KEYS = {
     "access_token",

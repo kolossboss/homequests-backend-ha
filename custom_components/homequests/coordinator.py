@@ -25,6 +25,7 @@ from .const import (
     ATTR_MEMBER_NAME,
     ATTR_MEMBER_USER_ID,
     ATTR_TYPE,
+    CONF_ENTRY_ID,
     CONF_FAMILY_ID,
     CONF_FAMILY_NAME,
     DEFAULT_REMINDER_WINDOW_MINUTES,
@@ -276,6 +277,7 @@ class HomeQuestsDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         delta_ids = [value for value in new_ids if value not in old_ids]
         payload = {
             ATTR_TYPE: event_type,
+            CONF_ENTRY_ID: self.entry.entry_id,
             ATTR_FAMILY_ID: self.family_id,
             ATTR_FAMILY_NAME: self.family_name,
             "old_count": old_value,
@@ -311,6 +313,7 @@ class HomeQuestsDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         delta_ids = [value for value in new_ids if value not in old_ids]
         payload = {
             ATTR_TYPE: event_type,
+            CONF_ENTRY_ID: self.entry.entry_id,
             ATTR_FAMILY_ID: self.family_id,
             ATTR_FAMILY_NAME: self.family_name,
             ATTR_MEMBER_USER_ID: current["user_id"],
@@ -464,6 +467,8 @@ def _build_processed_snapshot(
         child.pop("available_task_objects", None)
         child.pop("overdue_task_objects", None)
 
+    calendar_tasks = [_calendar_task_payload(task) for task in tasks]
+
     return {
         "family": {
             "id": family_id,
@@ -473,6 +478,7 @@ def _build_processed_snapshot(
         "members": members,
         "summary": summary,
         "children": member_children_data,
+        "tasks": calendar_tasks,
         "raw": {
             "task_count": len(tasks),
             "reward_count": len(rewards),
@@ -675,6 +681,19 @@ def _pending_redemption_label(entry: dict[str, Any], members_by_user: dict[int, 
     requester = members_by_user.get(int(entry.get("requested_by_id", -1)))
     requester_name = requester.get("display_name") if requester else f"User {entry.get('requested_by_id')}"
     return f"{requester_name} (#{entry.get('reward_id')})"
+
+
+def _calendar_task_payload(task: dict[str, Any]) -> dict[str, Any]:
+    assignee_id = task.get("assignee_id")
+    return {
+        "id": int(task["id"]),
+        "title": str(task.get("title", "")),
+        "description": str(task.get("description") or ""),
+        "assignee_id": int(assignee_id) if assignee_id is not None else None,
+        "due_at": task.get("due_at_ts"),
+        "status": str(task.get("status") or ""),
+        "is_active": task.get("is_active", True) is not False,
+    }
 
 
 def _parse_backend_datetime(value: str | None) -> datetime | None:

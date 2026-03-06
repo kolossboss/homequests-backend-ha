@@ -20,12 +20,13 @@ class HomeQuestsConfigFlow(ConfigFlow, domain=DOMAIN):
 
     _reauth_entry: ConfigEntry | None = None
     _reconfigure_entry: ConfigEntry | None = None
+    _pending_setup_context: dict[str, Any] | None = None
 
     async def async_step_user(self, user_input: Mapping[str, Any] | None = None):
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                info = await self._async_validate_input(user_input)
+                setup_context = await self._async_authenticate_input(user_input)
             except HomeQuestsAuthError:
                 errors["base"] = "invalid_auth"
             except HomeQuestsConnectionError:
@@ -35,6 +36,45 @@ class HomeQuestsConfigFlow(ConfigFlow, domain=DOMAIN):
             except Exception:
                 errors["base"] = "unknown"
             else:
+                families = setup_context["families"]
+                if len(families) == 1:
+                    info = self._build_entry_info(setup_context, int(families[0]["id"]))
+                    await self.async_set_unique_id(info["unique_id"])
+                    self._abort_if_unique_id_configured()
+                    return self.async_create_entry(
+                        title=info["title"],
+                        data=info["data"],
+                    )
+                self._pending_setup_context = setup_context
+                return await self.async_step_family()
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=self._build_schema(user_input),
+            errors=errors,
+        )
+
+    async def async_step_family(self, user_input: Mapping[str, Any] | None = None):
+        if self._pending_setup_context is None:
+            return self.async_abort(reason="unknown")
+
+        families = self._pending_setup_context["families"]
+        family_options = {
+            str(int(family["id"])): str(family.get("name", f"Familie {int(family['id'])}"))
+            for family in families
+        }
+        if not family_options:
+            self._pending_setup_context = None
+            return self.async_abort(reason="unknown")
+
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            selected_family_id = str(user_input.get(CONF_FAMILY_ID, ""))
+            if selected_family_id not in family_options:
+                errors["base"] = "unknown_family"
+            else:
+                info = self._build_entry_info(self._pending_setup_context, int(selected_family_id))
+                self._pending_setup_context = None
                 await self.async_set_unique_id(info["unique_id"])
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(
@@ -42,9 +82,14 @@ class HomeQuestsConfigFlow(ConfigFlow, domain=DOMAIN):
                     data=info["data"],
                 )
 
+        default_family_id = str(user_input.get(CONF_FAMILY_ID)) if user_input else next(iter(family_options))
         return self.async_show_form(
-            step_id="user",
-            data_schema=self._build_schema(user_input),
+            step_id="family",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_FAMILY_ID, default=default_family_id): vol.In(family_options),
+                }
+            ),
             errors=errors,
         )
 
@@ -71,7 +116,10 @@ class HomeQuestsConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             merged = {**defaults, **user_input}
             try:
-                info = await self._async_validate_input(merged)
+                info = await self._async_validate_input(
+                    merged,
+                    expected_family_id=int(self._reauth_entry.data[CONF_FAMILY_ID]),
+                )
             except HomeQuestsAuthError:
                 errors["base"] = "invalid_auth"
             except HomeQuestsConnectionError:
@@ -119,7 +167,10 @@ class HomeQuestsConfigFlow(ConfigFlow, domain=DOMAIN):
         }
         if user_input is not None:
             try:
-                info = await self._async_validate_input(user_input)
+                info = await self._async_validate_input(
+                    user_input,
+                    expected_family_id=int(self._reconfigure_entry.data[CONF_FAMILY_ID]),
+                )
             except HomeQuestsAuthError:
                 errors["base"] = "invalid_auth"
             except HomeQuestsConnectionError:
@@ -159,7 +210,7 @@ class HomeQuestsConfigFlow(ConfigFlow, domain=DOMAIN):
             }
         )
 
-    async def _async_validate_input(self, user_input: Mapping[str, Any]) -> dict[str, Any]:
+    async def _async_authenticate_input(self, user_input: Mapping[str, Any]) -> dict[str, Any]:
         base_url = normalize_base_url(str(user_input[CONF_BASE_URL]))
         username = str(user_input[CONF_USERNAME]).strip()
         password = str(user_input[CONF_PASSWORD])
@@ -167,8 +218,40 @@ class HomeQuestsConfigFlow(ConfigFlow, domain=DOMAIN):
         session = async_get_clientsession(self.hass)
         client = HomeQuestsClient(session, base_url, username, password)
         context = await client.async_get_setup_context()
-        family = context["family"]
-        me = context["me"]
+        return {
+            "base_url": base_url,
+            "username": username,
+            "password": password,
+            "me": context["me"],
+            "families": context["families"],
+        }
+
+    async def _async_validate_input(
+        self,
+        user_input: Mapping[str, Any],
+        *,
+        expected_family_id: int | None = None,
+    ) -> dict[str, Any]:
+        context = await self._async_authenticate_input(user_input)
+        families = context["families"]
+        if not families:
+            raise HomeQuestsNoFamilyError("No family available for configured user")
+        if expected_family_id is None:
+            family_id = int(families[0]["id"])
+        else:
+            family_id = int(expected_family_id)
+        return self._build_entry_info(context, family_id)
+
+    def _build_entry_info(self, setup_context: Mapping[str, Any], family_id: int) -> dict[str, Any]:
+        families: list[dict[str, Any]] = list(setup_context["families"])
+        family = next((entry for entry in families if int(entry["id"]) == family_id), None)
+        if family is None:
+            raise HomeQuestsNoFamilyError(f"Family {family_id} not available for configured user")
+
+        base_url = str(setup_context["base_url"])
+        username = str(setup_context["username"])
+        password = str(setup_context["password"])
+        me = setup_context["me"]
         family_id = int(family["id"])
         family_name = str(family.get("name", f"Familie {family_id}"))
         unique_id = build_unique_id(base_url, family_id)
@@ -194,6 +277,7 @@ class HomeQuestsConfigFlow(ConfigFlow, domain=DOMAIN):
         if len(entries) == 1:
             return entries[0]
         return None
+
 
 def normalize_base_url(value: str) -> str:
     raw = value.strip().rstrip("/")

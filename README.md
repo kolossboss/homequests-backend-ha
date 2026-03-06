@@ -11,6 +11,9 @@ Custom Integration fuer Home Assistant, die das bestehende HomeQuests-Backend an
 - Pro-Kind Sensoren fuer Aufgabenstatus, Punkte, Belohnungsanfragen und verfuegbare Sonderaufgaben
 - Binary Sensoren fuer Automationen
 - Home-Assistant-Event `homequests_event` bei relevanten Aenderungen
+- Native Event-Entities pro Familie und pro Kind
+- Native To-do-Listen (Familie: Aufgaben in Pruefung, Kind: verfuegbare Aufgaben)
+- Native Kalender-Entities (Familie + Kind) fuer faellige Aufgaben mit Due-Date
 - Live-Refresh ueber SSE (`/live/stream`) plus Polling-Fallback
 - Services fuer Review-/Punkte-Workflows
 - Diagnostics-Unterstuetzung
@@ -66,6 +69,21 @@ Pro Kind:
 
 - Jetzt aktualisieren
 
+### Event-Entities
+
+- Pro Familie: Event-Entity fuer HomeQuests-Automationsereignisse
+- Pro Kind: Event-Entity mit gefilterten Ereignissen fuer das jeweilige Kind
+
+### To-do-Listen
+
+- Familie: `Aufgaben in Pruefung`
+- Pro Kind: `Verfuegbare Aufgaben`
+
+### Kalender
+
+- Familie: `Aufgaben-Kalender`
+- Pro Kind: `Aufgaben-Kalender`
+
 ## Einrichtungsablauf in Home Assistant
 
 1. Repository in GitHub bereitstellen.
@@ -74,7 +92,8 @@ Pro Kind:
 4. Home Assistant neu starten.
 5. `Einstellungen -> Geraete & Dienste -> Integration hinzufuegen -> HomeQuests`.
 6. Backend-URL, Benutzername/E-Mail und Passwort eingeben.
-7. Die Integration verbindet sich mit der ersten Familie des Benutzers und legt Entities automatisch an.
+7. Wenn der Benutzer mehreren Familien angehoert, waehlt man die gewuenschte Familie im zweiten Schritt aus.
+8. Danach legt die Integration die passenden Devices/Entities automatisch an.
 
 ## Aktualisierung der Werte (Reload vs automatisch)
 
@@ -93,6 +112,9 @@ Pro Kind:
 - `custom_components/homequests/sensor.py`
 - `custom_components/homequests/binary_sensor.py`
 - `custom_components/homequests/button.py`
+- `custom_components/homequests/event.py`
+- `custom_components/homequests/todo.py`
+- `custom_components/homequests/calendar.py`
 - `custom_components/homequests/diagnostics.py`
 - `custom_components/homequests/services.yaml`
 - `custom_components/homequests/strings.json`
@@ -147,7 +169,7 @@ Ein fertiges Lovelace-Beispiel liegt unter [examples/lovelace-dashboard.yaml](/U
 ## Annahmen und Grenzen
 
 - Das Backend liefert keine globale Instanz-ID. Der Config-Entry-Unique-Identifier basiert deshalb auf `Backend-URL + family_id`.
-- Die Integration bindet die erste Familie aus `GET /families/my` an. Das passt zum aktuellen Backend, weil Benutzer faktisch nur einem Haushalt zugeordnet werden.
+- Bei mehreren Familien wird im Config Flow eine Familie ausgewaehlt; pro Familie entsteht ein eigener Config Entry.
 - `verfuegbare Aufgaben` orientieren sich an der vorhandenen Web-UI-Logik: offene oder abgelehnte, aktuell bearbeitbare Aufgaben.
 - Sonderaufgaben werden fuer Admin-/Eltern-Zugaenge lokal aus Templates und bereits beanspruchten Aufgaben abgeleitet, weil der Backend-Endpunkt fuer `available` nur fuer Kinder verfuegbar ist.
 - Integrations-Icons in HA sind versionsabhaengig: lokale `brand/`-Assets werden erst in neueren HA-Versionen direkt genutzt. In aelteren Versionen kommt das Icon aus dem zentralen HA-Brands-System.

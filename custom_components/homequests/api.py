@@ -66,12 +66,9 @@ class HomeQuestsClient:
         )
         if not families:
             raise HomeQuestsNoFamilyError("No family available for configured user")
-
-        family = families[0]
         return {
             "me": me,
             "families": families,
-            "family": family,
         }
 
     async def async_login(self, *, force: bool = False) -> str:

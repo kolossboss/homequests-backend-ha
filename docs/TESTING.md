@@ -27,14 +27,31 @@ python3 -m compileall custom_components
 1. `Einstellungen -> Geraete & Dienste -> Integration hinzufuegen`.
 2. `HomeQuests` waehlen.
 3. Backend-URL, Benutzername/E-Mail und Passwort eingeben.
-4. Erfolgsfall: Familie und Kinder-Devices werden angelegt.
+4. Falls mehrere Familien gefunden werden: gewuenschte Familie auswaehlen.
+5. Erfolgsfall: Familie und Kinder-Devices werden angelegt.
 
 ## 4. Sensoren pruefen
 
 - Familie: offene Aufgaben, Pruefungen, Belohnungsanfragen, Erinnerungen
 - Pro Kind: offene/verfuegbare/ueberfaellige Aufgaben, Punkte, Sonderaufgaben
 
-## 5. Services pruefen
+## 5. Event-Entities pruefen
+
+- Pro Familie und pro Kind existiert jeweils eine Event-Entity.
+- Bei Ereignissen (z. B. neue verfuegbare Aufgabe, Einreichung) sollte die jeweilige Event-Entity ein neues Event erhalten.
+- Event-Typen: `new_available_tasks`, `tasks_submitted`, `reward_requests_pending`, `special_tasks_available`
+
+## 6. To-do-Listen pruefen
+
+- Familien-To-do-Liste `Aufgaben in Pruefung` zeigt eingereichte/zu pruefende Aufgaben.
+- Kind-To-do-Liste `Verfuegbare Aufgaben` zeigt aktuell bearbeitbare Aufgaben.
+
+## 7. Kalender pruefen
+
+- Familien-Kalender `Aufgaben-Kalender` zeigt faellige aktive Aufgaben mit Due-Date.
+- Kind-Kalender `Aufgaben-Kalender` zeigt die faelligen Aufgaben des jeweiligen Kindes.
+
+## 8. Services pruefen
 
 Beispiel im Developer-Tool `Aktionen`:
 
@@ -51,7 +68,7 @@ Weitere sinnvolle Tests:
 - `homequests.adjust_points`
 - `homequests.refresh`
 
-## 6. Automations-Event pruefen
+## 9. Automations-Event pruefen
 
 Im Entwicklerwerkzeug `Ereignisse` auf `homequests_event` lauschen und dann im Backend eine neue Aufgabe einreichen oder verfuegbar machen.
 
@@ -66,14 +83,14 @@ Erwartete Felder:
 - `items`
 - `device_id` (falls passendes HA-Device existiert)
 
-## 7. Live-Refresh (SSE) pruefen
+## 10. Live-Refresh (SSE) pruefen
 
 1. Integration laden und normal warten (Polling laeuft immer).
 2. Im HomeQuests-Backend eine Aenderung ausloesen (z. B. Task einreichen oder Belohnung anfragen).
 3. Beobachten, dass die betroffenen Sensoren vor dem naechsten Polling-Intervall aktualisiert werden.
 4. Optional Logs pruefen: bei Stream-Abbruch sollte die Integration weiter per Polling aktualisieren.
 
-## 8. Diagnostics pruefen
+## 11. Diagnostics pruefen
 
 - `Einstellungen -> Geraete & Dienste -> HomeQuests -> Diagnose herunterladen`
 - pruefen, dass Passwoerter und personenbezogene Felder redigiert sind
