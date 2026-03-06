@@ -1,14 +1,14 @@
 {
   "domain": "homequests",
   "name": "HomeQuests",
+  "after_dependencies": ["http"],
   "codeowners": ["@kolossboss"],
   "config_flow": true,
-  "after_dependencies": ["http"],
   "documentation": "https://github.com/kolossboss/homequests-backend-ha",
   "integration_type": "hub",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/kolossboss/homequests-backend-ha/issues",
   "loggers": ["custom_components.homequests"],
   "requirements": [],
-  "version": "0.1.7"
+  "version": "0.1.8"
 }
