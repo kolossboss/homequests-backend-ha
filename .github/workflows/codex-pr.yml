@@ -13,12 +13,22 @@ jobs:
   open_or_update_pr:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Ensure PR exists for codex branch
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCH: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
+
+          ahead_by="$(gh api "repos/$REPOSITORY/compare/main...$BRANCH" --jq '.ahead_by')"
+          if [ "$ahead_by" -eq 0 ]; then
+            echo "Branch $BRANCH has no commits ahead of main. Skipping PR creation."
+            exit 0
+          fi
 
           pr_number="$(gh pr list --base main --head "$BRANCH" --json number --jq '.[0].number // empty')"
 
@@ -39,6 +49,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: open_or_update_pr
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Enable auto-merge for codex PR
         env:
           GH_TOKEN: ${{ github.token }}
