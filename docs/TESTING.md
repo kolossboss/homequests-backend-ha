@@ -66,7 +66,14 @@ Erwartete Felder:
 - `items`
 - `device_id` (falls passendes HA-Device existiert)
 
-## 7. Diagnostics pruefen
+## 7. Live-Refresh (SSE) pruefen
+
+1. Integration laden und normal warten (Polling laeuft immer).
+2. Im HomeQuests-Backend eine Aenderung ausloesen (z. B. Task einreichen oder Belohnung anfragen).
+3. Beobachten, dass die betroffenen Sensoren vor dem naechsten Polling-Intervall aktualisiert werden.
+4. Optional Logs pruefen: bei Stream-Abbruch sollte die Integration weiter per Polling aktualisieren.
+
+## 8. Diagnostics pruefen
 
 - `Einstellungen -> Geraete & Dienste -> HomeQuests -> Diagnose herunterladen`
 - pruefen, dass Passwoerter und personenbezogene Felder redigiert sind

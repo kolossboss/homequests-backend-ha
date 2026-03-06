@@ -4,7 +4,7 @@ from datetime import timedelta
 
 DOMAIN = "homequests"
 NAME = "HomeQuests"
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 ISSUE_URL = "https://github.com/kolossboss/homequests-backend-ha/issues"
 
 CONF_BASE_URL = "base_url"
@@ -19,6 +19,8 @@ CONF_USER_NAME = "user_name"
 DEFAULT_SCAN_INTERVAL = timedelta(minutes=2)
 DEFAULT_REMINDER_WINDOW_MINUTES = 1440
 REQUEST_TIMEOUT = 20
+LIVE_RECONNECT_SECONDS = 10
+LIVE_REFRESH_COOLDOWN_SECONDS = 3
 
 ATTR_DEVICE_ID = "device_id"
 ATTR_FAMILY_ID = "family_id"

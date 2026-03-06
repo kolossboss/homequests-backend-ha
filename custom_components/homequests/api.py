@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from typing import Any
 from urllib.parse import urljoin
 
-from aiohttp import ClientError, ClientResponseError, ClientSession
+from aiohttp import ClientError, ClientResponse, ClientResponseError, ClientSession
 
 from .const import REQUEST_TIMEOUT
 
@@ -180,6 +181,45 @@ class HomeQuestsClient:
     async def async_report_task_missed(self, task_id: int) -> dict[str, Any]:
         return await self._request("POST", f"/tasks/{task_id}/report-missed")
 
+    async def async_open_live_stream(self, family_id: int, *, since_id: int = 0) -> ClientResponse:
+        if self._token is None:
+            await self.async_login()
+
+        try:
+            return await self._open_live_stream(family_id=family_id, since_id=since_id)
+        except HomeQuestsAuthError:
+            _LOGGER.debug("Live stream token rejected, retrying login")
+            await self.async_login(force=True)
+            return await self._open_live_stream(family_id=family_id, since_id=since_id)
+
+    async def _open_live_stream(self, *, family_id: int, since_id: int) -> ClientResponse:
+        if self._token is None:
+            raise HomeQuestsAuthError("No access token available")
+
+        headers = {
+            "Accept": "text/event-stream",
+            "Authorization": f"Bearer {self._token}",
+            "Cache-Control": "no-cache",
+        }
+        url = urljoin(
+            f"{self._base_url}/",
+            f"/families/{family_id}/live/stream?since_id={max(since_id, 0)}",
+        )
+        try:
+            response = await self._session.get(url, headers=headers, timeout=None)
+        except ClientError as err:
+            raise HomeQuestsConnectionError(f"Could not open live stream {url}") from err
+
+        if response.status in {401, 403}:
+            detail = await _response_detail(response)
+            response.release()
+            raise HomeQuestsAuthError(detail or "Authentication failed")
+        if response.status >= 400:
+            detail = await _response_detail(response)
+            response.release()
+            raise HomeQuestsApiError(f"HTTP {response.status}: {detail or 'Live stream failed'}")
+        return response
+
     async def _request(self, method: str, path: str, *, json_body: dict[str, Any] | None = None) -> Any:
         if self._token is None:
             await self.async_login()
@@ -244,3 +284,14 @@ async def _response_detail(response) -> str | None:
         if detail is not None:
             return str(detail)
     return None
+
+
+def parse_sse_payload(raw_data: str) -> dict[str, Any]:
+    """Best effort SSE payload parsing."""
+    if not raw_data:
+        return {}
+    try:
+        decoded = json.loads(raw_data)
+    except json.JSONDecodeError:
+        return {}
+    return decoded if isinstance(decoded, dict) else {}

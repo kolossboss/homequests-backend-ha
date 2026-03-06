@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 from collections import defaultdict
+from contextlib import suppress
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
+import time
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -14,7 +17,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
-from .api import HomeQuestsApiError, HomeQuestsAuthError, HomeQuestsClient, HomeQuestsConnectionError
+from .api import HomeQuestsApiError, HomeQuestsAuthError, HomeQuestsClient, HomeQuestsConnectionError, parse_sse_payload
 from .const import (
     ATTR_DEVICE_ID,
     ATTR_FAMILY_ID,
@@ -32,6 +35,8 @@ from .const import (
     EVENT_REWARD_REQUESTS_PENDING,
     EVENT_SPECIAL_TASKS_AVAILABLE,
     EVENT_TASKS_SUBMITTED,
+    LIVE_RECONNECT_SECONDS,
+    LIVE_REFRESH_COOLDOWN_SECONDS,
     ROLE_CHILD,
     TASK_STATUS_APPROVED,
     TASK_STATUS_MISSED_SUBMITTED,
@@ -60,6 +65,10 @@ class HomeQuestsDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.api = api
         self.family_id = int(entry.data[CONF_FAMILY_ID])
         self.family_name = str(entry.data[CONF_FAMILY_NAME])
+        self._live_listener_task: asyncio.Task | None = None
+        self._live_stop_event = asyncio.Event()
+        self._last_live_event_id = 0
+        self._last_live_refresh_ts = 0.0
         super().__init__(
             hass,
             _LOGGER,
@@ -92,6 +101,111 @@ class HomeQuestsDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_manual_refresh(self) -> None:
         await self.async_request_refresh()
+
+    async def async_start_live_listener(self) -> None:
+        if self._live_listener_task is not None and not self._live_listener_task.done():
+            return
+        self._live_stop_event.clear()
+        self._live_listener_task = self.hass.async_create_task(
+            self._async_live_listener_loop(),
+            name=f"{DOMAIN}_live_listener_{self.family_id}",
+        )
+
+    async def async_stop_live_listener(self) -> None:
+        self._live_stop_event.set()
+        if self._live_listener_task is None:
+            return
+        self._live_listener_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await self._live_listener_task
+        self._live_listener_task = None
+
+    async def _async_live_listener_loop(self) -> None:
+        while not self._live_stop_event.is_set():
+            try:
+                response = await self.api.async_open_live_stream(
+                    self.family_id,
+                    since_id=self._last_live_event_id,
+                )
+                async with response:
+                    await self._async_consume_live_stream(response)
+            except HomeQuestsAuthError:
+                _LOGGER.warning("HomeQuests live stream auth error; fallback to polling until reauth succeeds")
+            except HomeQuestsConnectionError as err:
+                _LOGGER.debug("HomeQuests live stream connection error: %s", err)
+            except HomeQuestsApiError as err:
+                _LOGGER.debug("HomeQuests live stream API error: %s", err)
+            except asyncio.CancelledError:
+                raise
+            except Exception as err:  # pragma: no cover - defensive
+                _LOGGER.exception("Unexpected error in HomeQuests live stream: %s", err)
+
+            if self._live_stop_event.is_set():
+                break
+            try:
+                await asyncio.wait_for(self._live_stop_event.wait(), timeout=LIVE_RECONNECT_SECONDS)
+            except asyncio.TimeoutError:
+                continue
+
+    async def _async_consume_live_stream(self, response: Any) -> None:
+        event_name = ""
+        data_lines: list[str] = []
+        event_id: int | None = None
+
+        async for raw in response.content:
+            if self._live_stop_event.is_set():
+                return
+
+            line = raw.decode("utf-8", errors="ignore").rstrip("\r\n")
+            if not line:
+                await self._async_handle_live_event(
+                    event_name=event_name,
+                    event_id=event_id,
+                    raw_data="\n".join(data_lines),
+                )
+                event_name = ""
+                data_lines = []
+                event_id = None
+                continue
+
+            if line.startswith(":"):
+                continue
+            if line.startswith("id:"):
+                try:
+                    event_id = int(line[3:].strip())
+                except ValueError:
+                    event_id = None
+                continue
+            if line.startswith("event:"):
+                event_name = line[6:].strip()
+                continue
+            if line.startswith("data:"):
+                data_lines.append(line[5:].lstrip())
+
+        if event_name or data_lines or event_id is not None:
+            await self._async_handle_live_event(
+                event_name=event_name,
+                event_id=event_id,
+                raw_data="\n".join(data_lines),
+            )
+
+    async def _async_handle_live_event(self, *, event_name: str, event_id: int | None, raw_data: str) -> None:
+        if event_id is not None:
+            self._last_live_event_id = max(self._last_live_event_id, event_id)
+        if event_name not in {"family_update", "notification.test"}:
+            return
+
+        payload = parse_sse_payload(raw_data)
+        if payload:
+            event_obj = payload.get("id")
+            if isinstance(event_obj, int):
+                self._last_live_event_id = max(self._last_live_event_id, event_obj)
+
+        now_ts = time.monotonic()
+        if now_ts - self._last_live_refresh_ts < LIVE_REFRESH_COOLDOWN_SECONDS:
+            return
+        self._last_live_refresh_ts = now_ts
+        self.hass.async_create_task(self.async_request_refresh())
 
     def _emit_automation_events(self, *, previous: dict[str, Any], current: dict[str, Any]) -> None:
         self._emit_family_event_increase(

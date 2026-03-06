@@ -6,6 +6,7 @@
 - JWT-Bearer-Authentifizierung in `backend/app/security.py`
 - Rollenmodell: `admin`, `parent`, `child`
 - Live-Events per Server-Sent Events unter `/families/{family_id}/live/stream`
+- Die HA-Integration nutzt den Live-Stream fuer zeitnahe Refresh-Trigger und behaelt Polling als Fallback bei
 
 ## Authentifizierung
 

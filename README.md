@@ -11,6 +11,7 @@ Custom Integration fuer Home Assistant, die das bestehende HomeQuests-Backend an
 - Pro-Kind Sensoren fuer Aufgabenstatus, Punkte, Belohnungsanfragen und verfuegbare Sonderaufgaben
 - Binary Sensoren fuer Automationen
 - Home-Assistant-Event `homequests_event` bei relevanten Aenderungen
+- Live-Refresh ueber SSE (`/live/stream`) plus Polling-Fallback
 - Services fuer Review-/Punkte-Workflows
 - Diagnostics-Unterstuetzung
 - HACS-kompatible Repo-Struktur
@@ -75,6 +76,13 @@ Pro Kind:
 6. Backend-URL, Benutzername/E-Mail und Passwort eingeben.
 7. Die Integration verbindet sich mit der ersten Familie des Benutzers und legt Entities automatisch an.
 
+## Aktualisierung der Werte (Reload vs automatisch)
+
+- Nein, der Reload-Button muss nicht gedrueckt werden, damit neue Werte kommen.
+- Die Integration aktualisiert automatisch per Polling (Intervall: 2 Minuten).
+- Zusaetzlich wird der Backend-Live-Stream (SSE) genutzt: bei `family_update`/`notification.test` wird zeitnah ein Refresh angestossen.
+- Der Reload-Button ist nur fuer sofortige manuelle Aktualisierung gedacht.
+
 ## HACS-Struktur
 
 - `custom_components/homequests/manifest.json`
@@ -89,6 +97,8 @@ Pro Kind:
 - `custom_components/homequests/services.yaml`
 - `custom_components/homequests/strings.json`
 - `custom_components/homequests/translations/de.json`
+- `custom_components/homequests/brand/icon.png`
+- `custom_components/homequests/brand/logo.png`
 - `hacs.json`
 
 ## Home Assistant Events fuer Automationen
@@ -140,7 +150,7 @@ Ein fertiges Lovelace-Beispiel liegt unter [examples/lovelace-dashboard.yaml](/U
 - Die Integration bindet die erste Familie aus `GET /families/my` an. Das passt zum aktuellen Backend, weil Benutzer faktisch nur einem Haushalt zugeordnet werden.
 - `verfuegbare Aufgaben` orientieren sich an der vorhandenen Web-UI-Logik: offene oder abgelehnte, aktuell bearbeitbare Aufgaben.
 - Sonderaufgaben werden fuer Admin-/Eltern-Zugaenge lokal aus Templates und bereits beanspruchten Aufgaben abgeleitet, weil der Backend-Endpunkt fuer `available` nur fuer Kinder verfuegbar ist.
-- Live-SSE aus dem Backend wird noch nicht dauerhaft konsumiert. Aenderungserkennung erfolgt aktuell per Polling plus Delta-Vergleich.
+- Integrations-Icons in HA sind versionsabhaengig: lokale `brand/`-Assets werden erst in neueren HA-Versionen direkt genutzt. In aelteren Versionen kommt das Icon aus dem zentralen HA-Brands-System.
 
 ## Weiterfuehrende Doku
 
