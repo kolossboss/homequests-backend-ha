@@ -100,7 +100,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     runtime_data = HomeQuestsRuntimeData(api=api, coordinator=coordinator)
 
     hass.data[DOMAIN][entry.entry_id] = runtime_data
-    entry.runtime_data = runtime_data
+    # runtime_data is not available on very old HA core versions.
+    try:
+        entry.runtime_data = runtime_data
+    except AttributeError:
+        pass
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     try:

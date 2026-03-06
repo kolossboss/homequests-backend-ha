@@ -4,6 +4,7 @@
   "codeowners": ["@kolossboss"],
   "config_flow": true,
   "documentation": "https://github.com/kolossboss/homequests-backend-ha",
+  "icon": "mdi:home-heart",
   "integration_type": "hub",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/kolossboss/homequests-backend-ha/issues",

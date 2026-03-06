@@ -6,9 +6,10 @@ from urllib.parse import urlparse
 
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import ConfigEntry, ConfigFlow
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import HomeQuestsAuthError, HomeQuestsClient, HomeQuestsConnectionError, HomeQuestsNoFamilyError
@@ -21,7 +22,7 @@ class HomeQuestsConfigFlow(ConfigFlow, domain=DOMAIN):
     _reauth_entry: ConfigEntry | None = None
     _reconfigure_entry: ConfigEntry | None = None
 
-    async def async_step_user(self, user_input: Mapping[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_user(self, user_input: Mapping[str, Any] | None = None) -> FlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
@@ -48,7 +49,7 @@ class HomeQuestsConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> ConfigFlowResult:
+    async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> FlowResult:
         entry_id = self.context.get("entry_id")
         if entry_id is None:
             return self.async_abort(reason="unknown")
@@ -58,7 +59,7 @@ class HomeQuestsConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="unknown")
         return await self.async_step_reauth_confirm()
 
-    async def async_step_reauth_confirm(self, user_input: Mapping[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_reauth_confirm(self, user_input: Mapping[str, Any] | None = None) -> FlowResult:
         if self._reauth_entry is None:
             return self.async_abort(reason="unknown")
 
@@ -102,7 +103,7 @@ class HomeQuestsConfigFlow(ConfigFlow, domain=DOMAIN):
             description_placeholders={CONF_FAMILY_NAME: self._reauth_entry.data.get(CONF_FAMILY_NAME, "HomeQuests")},
         )
 
-    async def async_step_reconfigure(self, user_input: Mapping[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_reconfigure(self, user_input: Mapping[str, Any] | None = None) -> FlowResult:
         entry_id = self.context.get("entry_id")
         if entry_id is not None:
             self._reconfigure_entry = self.hass.config_entries.async_get_entry(entry_id)
