@@ -14,6 +14,7 @@ Custom Integration fuer Home Assistant, die das bestehende HomeQuests-Backend an
 - Native Event-Entities pro Familie und pro Kind
 - Native To-do-Listen (Familie: Aufgaben in Pruefung, Kind: verfuegbare Aufgaben)
 - Native Kalender-Entities (Familie + Kind) fuer faellige Aufgaben mit Due-Date
+- Eigene Lovelace Custom Card `homequests-overview-card`
 - Live-Refresh ueber SSE (`/live/stream`) plus Polling-Fallback
 - Services fuer Review-/Punkte-Workflows
 - Diagnostics-Unterstuetzung
@@ -84,6 +85,19 @@ Pro Kind:
 - Familie: `Aufgaben-Kalender`
 - Pro Kind: `Aufgaben-Kalender`
 
+### Lovelace Karte
+
+- Custom Card Typ: `custom:homequests-overview-card`
+- Resource-URL: `/homequests_frontend/homequests-overview-card.js` (Typ `JavaScript-Modul`)
+- Kachel-Design mit globalen Werten plus pro Kind:
+  - Punkte
+  - Heute faellige Aufgaben (0 = gruen, 1-2 = orange, >2 = rot)
+  - Ueberfaellige Aufgaben (>=1 = rot)
+  - Alle Aufgaben
+  - In Pruefung
+  - Bestaetigt
+- Konfigurierbar mit `child_count` und optional expliziter `children`-Liste
+
 ## Einrichtungsablauf in Home Assistant
 
 1. Repository in GitHub bereitstellen.
@@ -115,6 +129,7 @@ Pro Kind:
 - `custom_components/homequests/event.py`
 - `custom_components/homequests/todo.py`
 - `custom_components/homequests/calendar.py`
+- `custom_components/homequests/frontend/homequests-overview-card.js`
 - `custom_components/homequests/diagnostics.py`
 - `custom_components/homequests/services.yaml`
 - `custom_components/homequests/strings.json`
@@ -165,6 +180,7 @@ Wenn mehrere HomeQuests-Eintraege vorhanden sind, `entry_id` mitsenden.
 ## Dashboard-Beispiel
 
 Ein fertiges Lovelace-Beispiel liegt unter [examples/lovelace-dashboard.yaml](/Users/macminiserver/Documents/Xcode/Familienplaner/backend-HA-integration/examples/lovelace-dashboard.yaml).
+Ein Custom-Card-Beispiel liegt unter [examples/lovelace-homequests-card.yaml](/Users/macminiserver/Documents/Xcode/Familienplaner/backend-HA-integration/examples/lovelace-homequests-card.yaml).
 
 ## Annahmen und Grenzen
 

@@ -9,7 +9,7 @@
 
 ## Bekannte Luecken der ersten Version
 
-1. Kein eigener Lovelace-Frontend-Baustein; stattdessen ein Standard-Lovelace-Beispiel.
+Aktuell keine offenen funktionalen MVP-Luecken.
 
 ## Risiken
 

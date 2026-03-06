@@ -51,7 +51,18 @@ python3 -m compileall custom_components
 - Familien-Kalender `Aufgaben-Kalender` zeigt faellige aktive Aufgaben mit Due-Date.
 - Kind-Kalender `Aufgaben-Kalender` zeigt die faelligen Aufgaben des jeweiligen Kindes.
 
-## 8. Services pruefen
+## 8. Lovelace Custom Card pruefen
+
+1. Dashboard-Ressource anlegen:
+   - URL: `/homequests_frontend/homequests-overview-card.js`
+   - Typ: `JavaScript-Modul`
+2. Karte mit `type: custom:homequests-overview-card` einfuegen.
+3. `child_count` auf z. B. `2`, `3`, `4` testen und pruefen, dass sich die Anzahl Kind-Kacheln anpasst.
+4. Farbregeln pruefen:
+   - Heute faellig: 0=gruen, 1-2=orange, >2=rot
+   - Ueberfaellig: >=1=rot
+
+## 9. Services pruefen
 
 Beispiel im Developer-Tool `Aktionen`:
 
@@ -68,7 +79,7 @@ Weitere sinnvolle Tests:
 - `homequests.adjust_points`
 - `homequests.refresh`
 
-## 9. Automations-Event pruefen
+## 10. Automations-Event pruefen
 
 Im Entwicklerwerkzeug `Ereignisse` auf `homequests_event` lauschen und dann im Backend eine neue Aufgabe einreichen oder verfuegbar machen.
 
@@ -83,14 +94,14 @@ Erwartete Felder:
 - `items`
 - `device_id` (falls passendes HA-Device existiert)
 
-## 10. Live-Refresh (SSE) pruefen
+## 11. Live-Refresh (SSE) pruefen
 
 1. Integration laden und normal warten (Polling laeuft immer).
 2. Im HomeQuests-Backend eine Aenderung ausloesen (z. B. Task einreichen oder Belohnung anfragen).
 3. Beobachten, dass die betroffenen Sensoren vor dem naechsten Polling-Intervall aktualisiert werden.
 4. Optional Logs pruefen: bei Stream-Abbruch sollte die Integration weiter per Polling aktualisieren.
 
-## 11. Diagnostics pruefen
+## 12. Diagnostics pruefen
 
 - `Einstellungen -> Geraete & Dienste -> HomeQuests -> Diagnose herunterladen`
 - pruefen, dass Passwoerter und personenbezogene Felder redigiert sind

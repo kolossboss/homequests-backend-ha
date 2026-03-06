@@ -1,0 +1,13 @@
+# Resource in Home Assistant unter "Einstellungen -> Dashboards -> Ressourcen":
+# URL: /homequests_frontend/homequests-overview-card.js
+# Typ: JavaScript-Modul
+
+type: custom:homequests-overview-card
+title: HomeQuests Familie
+child_count: 4
+# Optional: feste Auswahl statt child_count (user_id oder Name)
+# children:
+#   - 12
+#   - 18
+# Optional: gezielt eine Familie, falls mehrere HomeQuests-Eintraege existieren
+# family_id: 1

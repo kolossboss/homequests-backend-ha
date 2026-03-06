@@ -64,6 +64,7 @@ GLOBAL_SENSORS: tuple[HomeQuestsSensorDescription, ...] = (
 
 
 CHILD_SENSORS: tuple[HomeQuestsSensorDescription, ...] = (
+    HomeQuestsSensorDescription(key="tasks_total", name="Aufgaben gesamt", icon="mdi:clipboard-text-outline", value_fn=lambda child: child["tasks_total"]),
     HomeQuestsSensorDescription(key="open_tasks", name="Offene Aufgaben", icon="mdi:clipboard-alert-outline", value_fn=lambda child: child["open_tasks"]),
     HomeQuestsSensorDescription(key="rejected_tasks", name="Abgelehnte Aufgaben", icon="mdi:clipboard-remove-outline", value_fn=lambda child: child["rejected_tasks"]),
     HomeQuestsSensorDescription(key="due_today_tasks", name="Heute fällige Aufgaben", icon="mdi:calendar-today-outline", value_fn=lambda child: child["due_today_tasks"]),
@@ -90,6 +91,7 @@ CHILD_SENSORS: tuple[HomeQuestsSensorDescription, ...] = (
         value_fn=lambda child: child["pending_reviews"],
         attributes_fn=lambda child: {"task_ids": child["pending_review_task_ids"], "task_titles": child["pending_review_task_titles"]},
     ),
+    HomeQuestsSensorDescription(key="approved_tasks", name="Bestätigte Aufgaben", icon="mdi:check-decagram-outline", value_fn=lambda child: child["approved_tasks"]),
     HomeQuestsSensorDescription(key="completed_tasks", name="Abgeschlossene Einzelaufgaben", icon="mdi:clipboard-check-outline", value_fn=lambda child: child["completed_tasks"]),
     HomeQuestsSensorDescription(key="points_balance", name="Punktestand", icon="mdi:star-circle-outline", value_fn=lambda child: child["points_balance"], unit="Punkte"),
     HomeQuestsSensorDescription(key="pending_reward_requests", name="Offene Belohnungsanfragen", icon="mdi:gift-open-outline", value_fn=lambda child: child["pending_reward_requests"]),
@@ -181,7 +183,12 @@ class HomeQuestsFamilySensor(HomeQuestsBaseEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        base = {"family_id": self.coordinator.family_id, "family_name": self.coordinator.family_name}
+        base = {
+            "family_id": self.coordinator.family_id,
+            "family_name": self.coordinator.family_name,
+            "metric_key": self.entity_description.key,
+            "scope": "family",
+        }
         if self.entity_description.attributes_fn is not None:
             base.update(self.entity_description.attributes_fn(self.coordinator.data))
         return base
@@ -239,6 +246,8 @@ class HomeQuestsChildSensor(HomeQuestsBaseEntity, SensorEntity):
             "display_name": child["display_name"],
             "role": child["role"],
             "is_active": child["is_active"],
+            "metric_key": self.entity_description.key,
+            "scope": "child",
         }
         if self.entity_description.attributes_fn is not None:
             base.update(self.entity_description.attributes_fn(child))

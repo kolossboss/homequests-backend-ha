@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import logging
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
 
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
@@ -33,6 +35,9 @@ from .coordinator import HomeQuestsDataUpdateCoordinator, HomeQuestsRuntimeData
 
 _LOGGER = logging.getLogger(__name__)
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+DATA_FRONTEND_REGISTERED = f"{DOMAIN}_frontend_registered"
+FRONTEND_STATIC_URL_PATH = "/homequests_frontend"
+FRONTEND_DIRECTORY_NAME = "frontend"
 
 SERVICE_SCHEMAS = {
     SERVICE_REFRESH: vol.Schema({vol.Optional(CONF_ENTRY_ID): cv.string}),
@@ -86,6 +91,7 @@ SERVICE_SCHEMAS = {
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.data.setdefault(DOMAIN, {})
+    await _async_register_frontend_assets(hass)
     return True
 
 
@@ -253,3 +259,25 @@ def _resolve_runtime_data(hass: HomeAssistant, call: ServiceCall) -> HomeQuestsR
         return next(iter(configured.values()))
 
     raise HomeAssistantError("Bitte 'entry_id' angeben, weil mehrere HomeQuests-Einträge geladen sind")
+
+
+async def _async_register_frontend_assets(hass: HomeAssistant) -> None:
+    if hass.data.get(DATA_FRONTEND_REGISTERED):
+        return
+
+    frontend_path = Path(__file__).parent / FRONTEND_DIRECTORY_NAME
+    if not frontend_path.exists():
+        return
+
+    try:
+        if hasattr(hass.http, "async_register_static_paths"):
+            await hass.http.async_register_static_paths(
+                [StaticPathConfig(FRONTEND_STATIC_URL_PATH, str(frontend_path), cache_headers=False)]
+            )
+        else:
+            hass.http.register_static_path(FRONTEND_STATIC_URL_PATH, str(frontend_path), cache_headers=False)
+    except Exception as err:  # pragma: no cover - defensive
+        _LOGGER.warning("HomeQuests frontend assets konnten nicht registriert werden: %s", err)
+        return
+
+    hass.data[DATA_FRONTEND_REGISTERED] = True
