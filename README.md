@@ -98,6 +98,37 @@ Pro Kind:
   - In Pruefung
   - Bestaetigt
 - Konfigurierbar mit `child_count` und optional expliziter `children`-Liste
+- Farblogik:
+  - `Heute faellig`: 0 = gruen, 1-2 = orange, >2 = rot
+  - `Ueberfaellig`: >=1 = rot
+  - `Bestaetigt`: dunkelgruen
+  - `Punkte`: orange
+  - `Alle Aufgaben`: blau
+
+#### Karte einrichten (Schritt fuer Schritt)
+
+1. HomeQuests Integration in HACS installieren/aktualisieren und Home Assistant neu starten.
+2. Dashboard-Resource anlegen:
+   - `Einstellungen -> Dashboards -> Ressourcen -> Hinzufuegen`
+   - URL: `/hacsfiles/homequests-backend-ha/homequests-overview-card.js`
+   - Typ: `JavaScript-Modul`
+3. Karte in einem Dashboard einfuegen:
+
+```yaml
+type: custom:homequests-overview-card
+title: HomeQuests Familie
+child_count: 4
+```
+
+Optional:
+
+```yaml
+type: custom:homequests-overview-card
+title: HomeQuests Kinder (Auswahl)
+children:
+  - 12
+  - 18
+```
 
 ## Einrichtungsablauf in Home Assistant
 
@@ -166,6 +197,27 @@ actions:
 mode: queued
 ```
 
+Konkretes Beispiel fuer Push-Benachrichtigung bei neuen Aufgaben in Pruefung:
+
+```yaml
+alias: HomeQuests - Neue Aufgaben in Pruefung
+description: Meldet eingereichte Aufgaben direkt ans Smartphone.
+trigger:
+  - platform: event
+    event_type: homequests_event
+    event_data:
+      type: tasks_submitted
+condition: []
+action:
+  - service: notify.mobile_app_dein_handy
+    data:
+      title: "HomeQuests"
+      message: >-
+        {{ trigger.event.data.family_name }}:
+        {{ trigger.event.data.delta_count }} neue Aufgabe(n) in Pruefung.
+mode: queued
+```
+
 ## Services
 
 - `homequests.refresh`
@@ -182,6 +234,7 @@ Wenn mehrere HomeQuests-Eintraege vorhanden sind, `entry_id` mitsenden.
 
 Ein fertiges Lovelace-Beispiel liegt unter [examples/lovelace-dashboard.yaml](/Users/macminiserver/Documents/Xcode/Familienplaner/backend-HA-integration/examples/lovelace-dashboard.yaml).
 Ein Custom-Card-Beispiel liegt unter [examples/lovelace-homequests-card.yaml](/Users/macminiserver/Documents/Xcode/Familienplaner/backend-HA-integration/examples/lovelace-homequests-card.yaml).
+Ein fertiges Automations-Beispiel liegt unter [examples/automation-homequests-notify.yaml](/Users/macminiserver/Documents/Xcode/Familienplaner/backend-HA-integration/examples/automation-homequests-notify.yaml).
 
 ## Annahmen und Grenzen
 

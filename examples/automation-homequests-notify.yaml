@@ -1,0 +1,16 @@
+alias: HomeQuests - Neue Aufgaben in Prüfung
+description: Benachrichtigt bei neu eingereichten Aufgaben.
+trigger:
+  - platform: event
+    event_type: homequests_event
+    event_data:
+      type: tasks_submitted
+condition: []
+action:
+  - service: notify.mobile_app_dein_handy
+    data:
+      title: HomeQuests
+      message: >-
+        {{ trigger.event.data.family_name }}:
+        {{ trigger.event.data.delta_count }} neue Aufgabe(n) in Prüfung.
+mode: queued

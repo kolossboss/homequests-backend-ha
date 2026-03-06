@@ -76,9 +76,21 @@ class HomeQuestsOverviewCard extends HTMLElement {
         background: rgba(64, 181, 73, 0.15);
         border-color: rgba(64, 181, 73, 0.4);
       }
+      .tile.ok-dark {
+        background: rgba(28, 94, 32, 0.25);
+        border-color: rgba(28, 94, 32, 0.55);
+      }
       .tile.warn {
         background: rgba(245, 151, 60, 0.18);
         border-color: rgba(245, 151, 60, 0.45);
+      }
+      .tile.points {
+        background: rgba(245, 151, 60, 0.2);
+        border-color: rgba(245, 151, 60, 0.52);
+      }
+      .tile.info {
+        background: rgba(42, 116, 255, 0.18);
+        border-color: rgba(42, 116, 255, 0.45);
       }
       .tile.alert {
         background: rgba(226, 44, 44, 0.18);
@@ -133,12 +145,12 @@ class HomeQuestsOverviewCard extends HTMLElement {
           <div class="child-card">
             <div class="child-name">${this._escape(child.display_name)}</div>
             <div class="metric-grid">
-              ${this._tile("Punkte", child.points_balance)}
+              ${this._tile("Punkte", child.points_balance, "points")}
               ${this._tile("Heute fällig", child.due_today_tasks, dueClass)}
               ${this._tile("Überfällig", child.overdue_tasks, overdueClass)}
-              ${this._tile("Alle Aufgaben", child.tasks_total)}
+              ${this._tile("Alle Aufgaben", child.tasks_total, "info")}
               ${this._tile("In Prüfung", child.pending_reviews, child.pending_reviews > 0 ? "warn" : "ok")}
-              ${this._tile("Bestätigt", child.approved_tasks)}
+              ${this._tile("Bestätigt", child.approved_tasks, "ok-dark")}
             </div>
           </div>
         `;

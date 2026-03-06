@@ -6,6 +6,12 @@
 type: custom:homequests-overview-card
 title: HomeQuests Familie
 child_count: 4
+# Farben:
+# - Punkte: orange
+# - Alle Aufgaben: blau
+# - Bestaetigt: dunkelgruen
+# - Heute faellig: 0=gruen, 1-2=orange, >2=rot
+# - Ueberfaellig: >=1=rot
 # Optional: feste Auswahl statt child_count (user_id oder Name)
 # children:
 #   - 12
