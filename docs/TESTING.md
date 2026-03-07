@@ -62,6 +62,8 @@ python3 -m compileall custom_components
 4. Farbregeln pruefen:
    - Heute faellig: 0=gruen, 1-2=orange, >2=rot
    - Ueberfaellig: >=1=rot
+5. Kachel-Klick pruefen: Klick auf eine Kachel oeffnet den More-Info-Dialog der passenden Entity.
+6. Karten-Editor pruefen: Reihenfolge aendern und Kacheln ausblenden (`child_tile_order`, `hidden_child_tiles`, `global_tile_order`, `hidden_global_tiles`).
 
 ## 9. Services pruefen
 

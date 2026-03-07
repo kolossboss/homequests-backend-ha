@@ -16,5 +16,20 @@ child_count: 4
 # children:
 #   - 12
 #   - 18
+# Optional: Reihenfolge/Ausblenden (auch im visuellen Editor einstellbar)
+# child_tile_order:
+#   - points_balance
+#   - due_today_tasks
+#   - overdue_tasks
+#   - tasks_total
+#   - pending_reviews
+#   - approved_tasks
+# hidden_child_tiles:
+#   - pending_reviews
+# global_tile_order:
+#   - tasks_overdue_total
+#   - tasks_pending_review_total
+#   - pending_reward_redemptions_total
+# hidden_global_tiles: []
 # Optional: gezielt eine Familie, falls mehrere HomeQuests-Eintraege existieren
 # family_id: 1

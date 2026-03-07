@@ -98,6 +98,12 @@ Pro Kind:
   - In Pruefung
   - Bestaetigt
 - Konfigurierbar mit `child_count` und optional expliziter `children`-Liste
+- Alle Kacheln sind klickbar und oeffnen die jeweilige Entity (`More Info`)
+- Voller Lovelace-Editor-Support:
+  - Reihenfolge der Kind-Kacheln (`child_tile_order`)
+  - Kind-Kacheln ausblenden (`hidden_child_tiles`)
+  - Reihenfolge globaler Kacheln (`global_tile_order`)
+  - Globale Kacheln ausblenden (`hidden_global_tiles`)
 - Farblogik:
   - `Heute faellig`: 0 = gruen, 1-2 = orange, >2 = rot
   - `Ueberfaellig`: >=1 = rot
@@ -128,6 +134,28 @@ title: HomeQuests Kinder (Auswahl)
 children:
   - 12
   - 18
+```
+
+Erweitertes Beispiel (Reihenfolge + Ausblenden):
+
+```yaml
+type: custom:homequests-overview-card
+title: HomeQuests Familie
+child_count: 4
+child_tile_order:
+  - points_balance
+  - due_today_tasks
+  - overdue_tasks
+  - tasks_total
+  - pending_reviews
+  - approved_tasks
+hidden_child_tiles:
+  - pending_reviews
+global_tile_order:
+  - tasks_overdue_total
+  - tasks_pending_review_total
+  - pending_reward_redemptions_total
+hidden_global_tiles: []
 ```
 
 ## Einrichtungsablauf in Home Assistant
