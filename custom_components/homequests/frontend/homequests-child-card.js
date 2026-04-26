@@ -75,18 +75,23 @@ class HomeQuestsChildCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    this._render();
+    if (this._config) {
+      this._render();
+    }
   }
 
   getCardSize() {
-    return 7;
+    return this._config?.show_reward_pie === false ? 8 : 12;
   }
 
   getGridOptions() {
+    const showStatus = this._config?.show_status_distribution !== false;
+    const showPie = this._config?.show_reward_pie !== false;
+    const rows = 5 + (showStatus ? 4 : 0) + (showPie ? 5 : 0);
     return {
-      rows: 7,
+      rows,
       columns: 6,
-      min_rows: 5,
+      min_rows: 7,
       min_columns: 4,
     };
   }
@@ -98,17 +103,17 @@ class HomeQuestsChildCard extends HTMLElement {
     style.textContent = `
       :host { display: block; }
       ha-card {
-        overflow: hidden;
+        overflow: visible;
         border-radius: 14px;
         background:
           linear-gradient(135deg, rgba(10, 132, 255, 0.14), rgba(48, 209, 88, 0.08)),
           var(--ha-card-background, var(--card-background-color));
       }
-      .shell { padding: 14px; display: grid; gap: 12px; }
+      .shell { padding: 12px; display: grid; gap: 10px; box-sizing: border-box; }
       .hero {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
-        gap: 12px;
+        gap: 10px;
         align-items: start;
       }
       .eyebrow {
@@ -119,14 +124,14 @@ class HomeQuestsChildCard extends HTMLElement {
       }
       .name {
         margin: 0;
-        font-size: 1.25rem;
+        font-size: clamp(1.05rem, 5vw, 1.25rem);
         line-height: 1.15;
         font-weight: 750;
       }
       .points-pill {
-        min-width: 84px;
+        min-width: 72px;
         border-radius: 12px;
-        padding: 8px 10px;
+        padding: 7px 9px;
         text-align: right;
         background: rgba(255, 159, 10, 0.18);
         border: 1px solid rgba(255, 159, 10, 0.42);
@@ -138,33 +143,42 @@ class HomeQuestsChildCard extends HTMLElement {
       }
       .points-pill strong {
         display: block;
-        font-size: 1.35rem;
+        font-size: clamp(1.1rem, 6vw, 1.35rem);
         line-height: 1.1;
       }
       .tile-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
+        grid-template-columns: repeat(auto-fit, minmax(min(96px, 100%), 1fr));
+        gap: 7px;
       }
-      @media (min-width: 520px) {
-        .tile-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      @media (max-width: 360px) {
+        .tile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
       .tile {
-        min-height: 72px;
+        min-width: 0;
+        min-height: 58px;
         border-radius: 10px;
-        padding: 9px;
+        padding: 8px;
         border: 1px solid rgba(255,255,255,0.1);
         background: rgba(255,255,255,0.045);
         display: grid;
         align-content: space-between;
+        gap: 8px;
       }
       .tile.clickable { cursor: pointer; }
       .tile.clickable:focus-visible {
         outline: 2px solid var(--primary-color);
         outline-offset: 2px;
       }
-      .tile-title { font-size: 0.72rem; color: var(--secondary-text-color); }
-      .tile-value { font-size: 1.25rem; font-weight: 800; line-height: 1.1; }
+      .tile-title {
+        min-width: 0;
+        color: var(--secondary-text-color);
+        font-size: clamp(0.68rem, 3.5vw, 0.78rem);
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+        hyphens: auto;
+      }
+      .tile-value { font-size: clamp(1.1rem, 6vw, 1.35rem); font-weight: 800; line-height: 1; }
       .tile.ok { background: rgba(48, 209, 88, 0.15); border-color: rgba(48, 209, 88, 0.4); }
       .tile.ok-dark { background: rgba(31, 143, 69, 0.24); border-color: rgba(31, 143, 69, 0.55); }
       .tile.warn, .tile.points { background: rgba(255, 159, 10, 0.2); border-color: rgba(255, 159, 10, 0.48); }
@@ -176,6 +190,7 @@ class HomeQuestsChildCard extends HTMLElement {
         border: 1px solid rgba(255,255,255,0.1);
         background: rgba(255,255,255,0.035);
         padding: 10px;
+        min-width: 0;
       }
       .section-head {
         display: flex;
@@ -212,7 +227,7 @@ class HomeQuestsChildCard extends HTMLElement {
       .fill { display: block; height: 100%; border-radius: inherit; }
       .pie-area {
         display: grid;
-        grid-template-columns: 150px minmax(0, 1fr);
+        grid-template-columns: minmax(120px, 150px) minmax(0, 1fr);
         gap: 10px;
         align-items: center;
       }
@@ -225,7 +240,7 @@ class HomeQuestsChildCard extends HTMLElement {
         display: grid;
         place-items: center;
       }
-      .pie-svg { width: 146px; height: 146px; }
+      .pie-svg { width: min(146px, 100%); height: auto; max-height: 146px; }
       .pie-segment { cursor: pointer; transition: stroke-width 160ms ease, opacity 160ms ease; }
       .pie-segment.active { filter: drop-shadow(0 0 7px rgba(255,255,255,0.28)); }
       .pie-center {
@@ -260,6 +275,15 @@ class HomeQuestsChildCard extends HTMLElement {
       .legend-title { font-size: 0.78rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .legend-value { font-size: 0.76rem; color: var(--secondary-text-color); }
       .empty { color: var(--secondary-text-color); font-size: 0.85rem; }
+      @media (max-width: 360px) {
+        .shell { padding: 10px; }
+        .hero { grid-template-columns: 1fr; }
+        .points-pill { text-align: left; }
+        .section-head { align-items: stretch; flex-direction: column; }
+        .segmented { width: 100%; }
+        .legend-button { grid-template-columns: 10px minmax(0, 1fr); }
+        .legend-value { grid-column: 2; }
+      }
     `;
     this._root.appendChild(style);
     this._card = document.createElement("ha-card");
@@ -524,7 +548,8 @@ class HomeQuestsChildCardEditor extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    if (this._config) {
+    if (this._config && !this._hasRenderedWithHass && !this._isEditorActive()) {
+      this._hasRenderedWithHass = true;
       this._render();
     }
   }
@@ -549,11 +574,24 @@ class HomeQuestsChildCardEditor extends HTMLElement {
         font: inherit;
       }
       .hint { font-size: 0.78rem; color: var(--secondary-text-color); }
-      .toggle-row { display: flex; align-items: center; gap: 8px; }
+      .toggle-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 38px;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--divider-color);
+      }
+      .toggle-row input { width: auto; }
     `;
     this._root.appendChild(style);
     this._container = document.createElement("div");
     this._container.className = "editor";
+    this._container.addEventListener("click", (event) => event.stopPropagation());
+    this._container.addEventListener("mousedown", (event) => event.stopPropagation());
+    this._container.addEventListener("keydown", (event) => event.stopPropagation());
     this._root.appendChild(this._container);
   }
 
@@ -569,8 +607,10 @@ class HomeQuestsChildCardEditor extends HTMLElement {
       <div class="hint">Mögliche Werte: ${CHILD_TILE_KEYS.join(", ")}</div>
       ${this._textField("hidden_tiles", "Kacheln ausblenden (CSV)", this._toCsv(this._config.hidden_tiles))}
       ${this._textField("pie_mode", "Pie-Modus: requests oder spent", this._config.pie_mode || "requests")}
-      ${this._toggleField("show_status_distribution", "Statusverteilung anzeigen", this._config.show_status_distribution !== false)}
-      ${this._toggleField("show_reward_pie", "Belohnungsdiagramm anzeigen", this._config.show_reward_pie !== false)}
+      <div class="toggle-grid">
+        ${this._toggleField("show_status_distribution", "Statusverteilung anzeigen", this._config.show_status_distribution !== false)}
+        ${this._toggleField("show_reward_pie", "Belohnungsdiagramm anzeigen", this._config.show_reward_pie !== false)}
+      </div>
     `;
     for (const input of this._container.querySelectorAll("input, select")) {
       input.addEventListener("change", (event) => this._valueChanged(event));
@@ -615,6 +655,11 @@ class HomeQuestsChildCardEditor extends HTMLElement {
     this.dispatchEvent(new CustomEvent("config-changed", { detail: { config }, bubbles: true, composed: true }));
   }
 
+  _isEditorActive() {
+    const active = this._root?.activeElement;
+    return Boolean(active && ["INPUT", "SELECT", "TEXTAREA"].includes(active.tagName));
+  }
+
   _toCsv(value) {
     if (!value) return "";
     return Array.isArray(value) ? value.join(", ") : String(value);
@@ -654,10 +699,6 @@ class HomeQuestsChildCardEditor extends HTMLElement {
 
 if (!customElements.get("homequests-child-card")) {
   customElements.define("homequests-child-card", HomeQuestsChildCard);
-}
-
-if (!customElements.get("homequests-overview-card")) {
-  customElements.define("homequests-overview-card", HomeQuestsChildCard);
 }
 
 if (!customElements.get("homequests-child-card-editor")) {

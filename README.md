@@ -87,9 +87,9 @@ Pro Kind:
 
 ### Lovelace Karte
 
-- Custom Card Typ: `custom:homequests-child-card`
-- Resource-URL (empfohlen): `/homequests_frontend/homequests-child-card.js?v=0.1.14` (Typ `JavaScript-Modul`)
-- Alte Resource-URL `/homequests_frontend/homequests-overview-card.js` bleibt als Kompatibilitaets-Wrapper erhalten.
+- Custom Card Typen: `custom:homequests-child-card` und `custom:homequests-overview-card`
+- Resource-URL (empfohlen, beide Karten): `/homequests_frontend/homequests-cards.js` (Typ `JavaScript-Modul`)
+- Einzel-Resources: `/homequests_frontend/homequests-child-card.js` oder `/homequests_frontend/homequests-overview-card.js`
 - Eine Karte wird fuer genau ein Kind konfiguriert (`child_id` oder `child_name`).
 - Kachel-Design im Stil der WebUI mit Kind-Fokus:
   - Punkte
@@ -120,7 +120,7 @@ Pro Kind:
 1. HomeQuests Integration in HACS installieren/aktualisieren und Home Assistant neu starten.
 2. Dashboard-Resource anlegen:
    - `Einstellungen -> Dashboards -> Ressourcen -> Hinzufuegen`
-   - URL: `/homequests_frontend/homequests-child-card.js?v=0.1.14`
+   - URL: `/homequests_frontend/homequests-cards.js`
    - Typ: `JavaScript-Modul`
 3. Karte in einem Dashboard einfuegen:
 
@@ -130,13 +130,19 @@ title: HomeQuests
 child_name: Mia
 ```
 
-Migration von der alten Familienkarte:
+Karten-Typen:
 
-- Alte Karte entfernen oder nicht mehr verwenden:
-  `type: custom:homequests-overview-card`
-- Alte Optionen wie `child_count`, `children`, `child_tile_order` werden nicht mehr fuer das neue Design genutzt.
-- Fuer jedes Kind eine eigene Karte mit `type: custom:homequests-child-card` anlegen.
-- Falls `Custom element not found: homequests-child-card` erscheint, ist fast immer noch die alte JS-Ressource im Browser/HA-Cache aktiv. Dann die Dashboard-Ressource auf `/homequests_frontend/homequests-child-card.js?v=0.1.14` setzen und den Browser hart neu laden.
+- `custom:homequests-child-card`: neue Kind-Karte, eine Karte pro Kind.
+- `custom:homequests-overview-card`: Familien-Overview mit `child_count` und globalen Kacheln.
+- Falls `Custom element not found` erscheint, ist fast immer noch eine alte JS-Ressource im Browser/HA-Cache aktiv. Dann die Dashboard-Ressource auf `/homequests_frontend/homequests-cards.js` setzen und den Browser hart neu laden.
+
+Overview-Beispiel:
+
+```yaml
+type: custom:homequests-overview-card
+title: HomeQuests Familie
+child_count: 2
+```
 
 Optional:
 
@@ -199,7 +205,9 @@ pie_mode: requests
 - `custom_components/homequests/event.py`
 - `custom_components/homequests/todo.py`
 - `custom_components/homequests/calendar.py`
+- `custom_components/homequests/frontend/homequests-cards.js`
 - `custom_components/homequests/frontend/homequests-child-card.js`
+- `custom_components/homequests/frontend/homequests-overview-card.js`
 - `custom_components/homequests/diagnostics.py`
 - `custom_components/homequests/services.yaml`
 - `custom_components/homequests/strings.json`

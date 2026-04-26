@@ -54,10 +54,10 @@ python3 -m compileall custom_components
 ## 8. Lovelace Custom Card pruefen
 
 1. Dashboard-Ressource anlegen:
-   - URL: `/homequests_frontend/homequests-child-card.js?v=0.1.14`
+   - URL: `/homequests_frontend/homequests-cards.js`
    - Typ: `JavaScript-Modul`
-   - Alte URL `/homequests_frontend/homequests-overview-card.js` nur noch als Kompatibilitaets-Wrapper testen.
-2. Karte mit `type: custom:homequests-child-card` einfuegen.
+   - Einzel-Resources optional: `/homequests_frontend/homequests-child-card.js` oder `/homequests_frontend/homequests-overview-card.js`
+2. Karten mit `type: custom:homequests-child-card` und `type: custom:homequests-overview-card` einfuegen.
 3. Kind per Dropdown (`child_id`) auswaehlen oder `child_name` als Fallback setzen und fuer jedes Kind eine eigene Karte anlegen.
 4. Farbregeln pruefen:
    - Heute faellig: 0=gruen, 1-2=orange, >2=rot
