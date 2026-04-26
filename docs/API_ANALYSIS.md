@@ -129,6 +129,7 @@ Mitgliedsdaten:
 ### Endpunkte
 
 - `GET /families/{family_id}/points/balances`
+- `GET /families/{family_id}/points/stats/{user_id}`
 - `GET /families/{family_id}/points/balance/{user_id}`
 - `GET /families/{family_id}/points/ledger`
 - `GET /families/{family_id}/points/ledger/{user_id}`
@@ -141,6 +142,17 @@ Mitgliedsdaten:
 - `reward_contribution`
 - `task_penalty`
 - `manual_adjustment`
+
+### Punkte-Statistiken fuer Kind-Karten
+
+`GET /families/{family_id}/points/stats/{user_id}` liefert u. a.:
+- aktueller Punktestand
+- jemals gesammelte/ausgegebene Punkte
+- Tages-/Wochen-/Monatsdurchschnitt
+- Reward-Anfragen nach Belohnung
+- ausgegebene Reward-Punkte nach Belohnung
+
+Die Lovelace-Karte nutzt diese Daten fuer das Belohnungs-Kuchendiagramm.
 
 ## Belohnungen
 

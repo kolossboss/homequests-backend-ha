@@ -57,13 +57,14 @@ python3 -m compileall custom_components
    - URL: `/hacsfiles/homequests-backend-ha/homequests-overview-card.js`
    - Typ: `JavaScript-Modul`
    - Alternative URL: `/homequests_frontend/homequests-overview-card.js`
-2. Karte mit `type: custom:homequests-overview-card` einfuegen.
-3. `child_count` auf z. B. `2`, `3`, `4` testen und pruefen, dass sich die Anzahl Kind-Kacheln anpasst.
+2. Karte mit `type: custom:homequests-child-card` einfuegen.
+3. Kind per Dropdown (`child_id`) auswaehlen oder `child_name` als Fallback setzen und fuer jedes Kind eine eigene Karte anlegen.
 4. Farbregeln pruefen:
    - Heute faellig: 0=gruen, 1-2=orange, >2=rot
    - Ueberfaellig: >=1=rot
 5. Kachel-Klick pruefen: Klick auf eine Kachel oeffnet den More-Info-Dialog der passenden Entity.
-6. Karten-Editor pruefen: Reihenfolge aendern und Kacheln ausblenden (`child_tile_order`, `hidden_child_tiles`, `global_tile_order`, `hidden_global_tiles`).
+6. Karten-Editor pruefen: Reihenfolge aendern und Kacheln ausblenden (`tile_order`, `hidden_tiles`), inklusive `tasks_total`.
+7. Kuchendiagramm pruefen: `pie_mode` zwischen `requests` und `spent` wechseln.
 
 ## 9. Services pruefen
 

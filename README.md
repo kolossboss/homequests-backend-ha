@@ -14,7 +14,7 @@ Custom Integration fuer Home Assistant, die das bestehende HomeQuests-Backend an
 - Native Event-Entities pro Familie und pro Kind
 - Native To-do-Listen (Familie: Aufgaben in Pruefung, Kind: verfuegbare Aufgaben)
 - Native Kalender-Entities (Familie + Kind) fuer faellige Aufgaben mit Due-Date
-- Eigene Lovelace Custom Card `homequests-overview-card`
+- Eigene Lovelace Custom Card `homequests-child-card`
 - Live-Refresh ueber SSE (`/live/stream`) plus Polling-Fallback
 - Services fuer Review-/Punkte-Workflows
 - Diagnostics-Unterstuetzung
@@ -87,29 +87,33 @@ Pro Kind:
 
 ### Lovelace Karte
 
-- Custom Card Typ: `custom:homequests-overview-card`
+- Custom Card Typ: `custom:homequests-child-card`
 - Resource-URL (empfohlen): `/hacsfiles/homequests-backend-ha/homequests-overview-card.js` (Typ `JavaScript-Modul`)
 - Alternative Resource-URL: `/homequests_frontend/homequests-overview-card.js`
-- Kachel-Design mit globalen Werten plus pro Kind:
+- Eine Karte wird fuer genau ein Kind konfiguriert (`child_id` oder `child_name`).
+- Kachel-Design im Stil der WebUI mit Kind-Fokus:
   - Punkte
   - Heute faellige Aufgaben (0 = gruen, 1-2 = orange, >2 = rot)
   - Ueberfaellige Aufgaben (>=1 = rot)
   - Alle Aufgaben
+  - Verfuegbare Aufgaben
   - In Pruefung
   - Bestaetigt
-- Konfigurierbar mit `child_count` und optional expliziter `children`-Liste
+- Zusaetzlich: Statusverteilung und Belohnungs-Kuchendiagramm wie in der WebUI.
 - Alle Kacheln sind klickbar und oeffnen die jeweilige Entity (`More Info`)
 - Voller Lovelace-Editor-Support:
-  - Reihenfolge der Kind-Kacheln (`child_tile_order`)
-  - Kind-Kacheln ausblenden (`hidden_child_tiles`)
-  - Reihenfolge globaler Kacheln (`global_tile_order`)
-  - Globale Kacheln ausblenden (`hidden_global_tiles`)
+  - Kind per Dropdown auswaehlen (`child_id`) oder per Fallback-Name (`child_name`)
+  - Reihenfolge der Kacheln (`tile_order`)
+  - Kacheln ausblenden (`hidden_tiles`)
+  - Statusverteilung ein-/ausblenden
+  - Belohnungsdiagramm ein-/ausblenden
+  - Pie-Modus `requests` oder `spent`
 - Farblogik:
   - `Heute faellig`: 0 = gruen, 1-2 = orange, >2 = rot
   - `Ueberfaellig`: >=1 = rot
   - `Bestaetigt`: dunkelgruen
   - `Punkte`: orange
-  - `Alle Aufgaben`: blau
+  - `Alle Aufgaben`, `Verfuegbar` und `Offen`: blau
 
 #### Karte einrichten (Schritt fuer Schritt)
 
@@ -121,41 +125,39 @@ Pro Kind:
 3. Karte in einem Dashboard einfuegen:
 
 ```yaml
-type: custom:homequests-overview-card
-title: HomeQuests Familie
-child_count: 4
+type: custom:homequests-child-card
+title: HomeQuests
+child_name: Mia
 ```
 
 Optional:
 
 ```yaml
-type: custom:homequests-overview-card
-title: HomeQuests Kinder (Auswahl)
-children:
-  - 12
-  - 18
+type: custom:homequests-child-card
+title: HomeQuests
+child_id: 12
+pie_mode: spent
 ```
 
 Erweitertes Beispiel (Reihenfolge + Ausblenden):
 
 ```yaml
-type: custom:homequests-overview-card
-title: HomeQuests Familie
-child_count: 4
-child_tile_order:
+type: custom:homequests-child-card
+title: HomeQuests
+child_name: Mia
+tile_order:
   - points_balance
   - due_today_tasks
   - overdue_tasks
   - tasks_total
+  - available_tasks
   - pending_reviews
   - approved_tasks
-hidden_child_tiles:
+hidden_tiles:
   - pending_reviews
-global_tile_order:
-  - tasks_overdue_total
-  - tasks_pending_review_total
-  - pending_reward_redemptions_total
-hidden_global_tiles: []
+show_status_distribution: true
+show_reward_pie: true
+pie_mode: requests
 ```
 
 ## Einrichtungsablauf in Home Assistant
@@ -260,9 +262,9 @@ Wenn mehrere HomeQuests-Eintraege vorhanden sind, `entry_id` mitsenden.
 
 ## Dashboard-Beispiel
 
-Ein fertiges Lovelace-Beispiel liegt unter [examples/lovelace-dashboard.yaml](/Users/macminiserver/Documents/Xcode/Familienplaner/backend-HA-integration/examples/lovelace-dashboard.yaml).
-Ein Custom-Card-Beispiel liegt unter [examples/lovelace-homequests-card.yaml](/Users/macminiserver/Documents/Xcode/Familienplaner/backend-HA-integration/examples/lovelace-homequests-card.yaml).
-Ein fertiges Automations-Beispiel liegt unter [examples/automation-homequests-notify.yaml](/Users/macminiserver/Documents/Xcode/Familienplaner/backend-HA-integration/examples/automation-homequests-notify.yaml).
+Ein fertiges Lovelace-Beispiel liegt unter `examples/lovelace-dashboard.yaml`.
+Ein Custom-Card-Beispiel liegt unter `examples/lovelace-homequests-card.yaml`.
+Ein fertiges Automations-Beispiel liegt unter `examples/automation-homequests-notify.yaml`.
 
 ## Annahmen und Grenzen
 
@@ -274,7 +276,7 @@ Ein fertiges Automations-Beispiel liegt unter [examples/automation-homequests-no
 
 ## Weiterfuehrende Doku
 
-- [Backend-Analyse](/Users/macminiserver/Documents/Xcode/Familienplaner/backend-HA-integration/docs/API_ANALYSIS.md)
-- [Testanleitung](/Users/macminiserver/Documents/Xcode/Familienplaner/backend-HA-integration/docs/TESTING.md)
-- [Offene Punkte und Risiken](/Users/macminiserver/Documents/Xcode/Familienplaner/backend-HA-integration/docs/OPEN_POINTS.md)
-- [GitHub-Repo-Befehle](/Users/macminiserver/Documents/Xcode/Familienplaner/backend-HA-integration/GITHUB_REPO_COMMANDS.md)
+- `docs/API_ANALYSIS.md`
+- `docs/TESTING.md`
+- `docs/OPEN_POINTS.md`
+- `GITHUB_REPO_COMMANDS.md`

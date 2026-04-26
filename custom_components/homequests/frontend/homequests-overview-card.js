@@ -3,91 +3,73 @@ const CHILD_TILE_KEYS = [
   "due_today_tasks",
   "overdue_tasks",
   "tasks_total",
+  "available_tasks",
   "pending_reviews",
   "approved_tasks",
+  "open_tasks",
+  "pending_reward_requests",
 ];
 
-const GLOBAL_TILE_KEYS = [
-  "tasks_pending_review_total",
-  "tasks_overdue_total",
-  "pending_reward_redemptions_total",
+const STATUS_KEYS = [
+  ["open", "Offen", "#2f7cf6"],
+  ["submitted", "Prüfung", "#ff9f0a"],
+  ["missed_submitted", "Verpasst", "#ff3b30"],
+  ["approved", "Bestätigt", "#1f8f45"],
+  ["rejected", "Abgelehnt", "#bf5af2"],
 ];
+
+const PIE_COLORS = ["#0a84ff", "#30d158", "#ff9f0a", "#bf5af2", "#ff453a", "#64d2ff", "#ffd60a"];
 
 const CHILD_TILE_DEFINITIONS = {
-  points_balance: {
-    title: "Punkte",
-    severity: () => "points",
-  },
+  points_balance: { title: "Punkte", severity: () => "points" },
   due_today_tasks: {
     title: "Heute fällig",
-    severity: (child) => {
-      if (child.due_today_tasks === 0) return "ok";
-      if (child.due_today_tasks <= 2) return "warn";
-      return "alert";
-    },
+    severity: (child) => (child.due_today_tasks === 0 ? "ok" : child.due_today_tasks <= 2 ? "warn" : "alert"),
   },
-  overdue_tasks: {
-    title: "Überfällig",
-    severity: (child) => (child.overdue_tasks >= 1 ? "alert" : "ok"),
-  },
-  tasks_total: {
-    title: "Alle Aufgaben",
-    severity: () => "info",
-  },
-  pending_reviews: {
-    title: "In Prüfung",
-    severity: (child) => (child.pending_reviews > 0 ? "warn" : "ok"),
-  },
-  approved_tasks: {
-    title: "Bestätigt",
-    severity: () => "ok-dark",
+  overdue_tasks: { title: "Überfällig", severity: (child) => (child.overdue_tasks > 0 ? "alert" : "ok") },
+  tasks_total: { title: "Alle Aufgaben", severity: () => "info" },
+  available_tasks: { title: "Verfügbar", severity: (child) => (child.available_tasks > 0 ? "info" : "quiet") },
+  pending_reviews: { title: "In Prüfung", severity: (child) => (child.pending_reviews > 0 ? "warn" : "ok") },
+  approved_tasks: { title: "Bestätigt", severity: () => "ok-dark" },
+  open_tasks: { title: "Offen", severity: () => "info" },
+  pending_reward_requests: {
+    title: "Belohnungen",
+    severity: (child) => (child.pending_reward_requests > 0 ? "reward" : "quiet"),
   },
 };
 
-const GLOBAL_TILE_DEFINITIONS = {
-  tasks_pending_review_total: {
-    title: "In Prüfung",
-    severity: (global) => (global.tasks_pending_review_total > 0 ? "warn" : "ok"),
-  },
-  tasks_overdue_total: {
-    title: "Überfällig",
-    severity: (global) => (global.tasks_overdue_total > 0 ? "alert" : "ok"),
-  },
-  pending_reward_redemptions_total: {
-    title: "Belohnungen offen",
-    severity: (global) => (global.pending_reward_redemptions_total > 0 ? "warn" : "ok"),
-  },
-};
-
-class HomeQuestsOverviewCard extends HTMLElement {
+class HomeQuestsChildCard extends HTMLElement {
   static getStubConfig() {
     return {
-      type: "custom:homequests-overview-card",
-      title: "HomeQuests Familie",
-      child_count: 3,
+      title: "HomeQuests",
+      child_name: "",
+      show_status_distribution: true,
+      show_reward_pie: true,
     };
   }
 
   static getConfigElement() {
-    return document.createElement("homequests-overview-card-editor");
+    return document.createElement("homequests-child-card-editor");
   }
 
   setConfig(config) {
     if (!config || typeof config !== "object") {
       throw new Error("Ungültige Konfiguration für HomeQuests-Karte.");
     }
-
     this._config = {
-      title: "HomeQuests Übersicht",
-      child_count: 3,
+      title: "HomeQuests",
       family_id: null,
-      children: this._normalizeArrayConfig(config.children),
-      child_tile_order: this._normalizeArrayConfig(config.child_tile_order),
-      hidden_child_tiles: this._normalizeArrayConfig(config.hidden_child_tiles),
-      global_tile_order: this._normalizeArrayConfig(config.global_tile_order),
-      hidden_global_tiles: this._normalizeArrayConfig(config.hidden_global_tiles),
+      child_id: null,
+      child_name: "",
+      tile_order: [],
+      hidden_tiles: [],
+      pie_mode: "requests",
+      show_status_distribution: true,
+      show_reward_pie: true,
       ...config,
     };
+    this._selectedRewardId = null;
+    this._pieMode = this._config.pie_mode === "spent" ? "spent" : "requests";
     this._render();
   }
 
@@ -97,9 +79,16 @@ class HomeQuestsOverviewCard extends HTMLElement {
   }
 
   getCardSize() {
-    const count = Number(this?._config?.child_count ?? 3);
-    const safeCount = Number.isFinite(count) && count > 0 ? count : 3;
-    return Math.max(4, 2 + safeCount);
+    return 7;
+  }
+
+  getGridOptions() {
+    return {
+      rows: 7,
+      columns: 6,
+      min_rows: 5,
+      min_columns: 4,
+    };
   }
 
   _ensureRoot() {
@@ -107,99 +96,170 @@ class HomeQuestsOverviewCard extends HTMLElement {
     this._root = this.attachShadow({ mode: "open" });
     const style = document.createElement("style");
     style.textContent = `
-      :host {
-        display: block;
-      }
+      :host { display: block; }
       ha-card {
-        padding: 14px;
+        overflow: hidden;
+        border-radius: 14px;
+        background:
+          linear-gradient(135deg, rgba(10, 132, 255, 0.14), rgba(48, 209, 88, 0.08)),
+          var(--ha-card-background, var(--card-background-color));
       }
-      .title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 10px;
-      }
-      .section-label {
-        font-size: 0.85rem;
-        color: var(--secondary-text-color);
-        margin: 12px 0 8px 0;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-      }
-      .global-grid {
+      .shell { padding: 14px; display: grid; gap: 12px; }
+      .hero {
         display: grid;
-        grid-template-columns: repeat(3, minmax(120px, 1fr));
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: start;
+      }
+      .eyebrow {
+        margin: 0 0 3px;
+        color: var(--secondary-text-color);
+        font-size: 0.76rem;
+        letter-spacing: 0;
+      }
+      .name {
+        margin: 0;
+        font-size: 1.25rem;
+        line-height: 1.15;
+        font-weight: 750;
+      }
+      .points-pill {
+        min-width: 84px;
+        border-radius: 12px;
+        padding: 8px 10px;
+        text-align: right;
+        background: rgba(255, 159, 10, 0.18);
+        border: 1px solid rgba(255, 159, 10, 0.42);
+      }
+      .points-pill span {
+        display: block;
+        font-size: 0.72rem;
+        color: var(--secondary-text-color);
+      }
+      .points-pill strong {
+        display: block;
+        font-size: 1.35rem;
+        line-height: 1.1;
+      }
+      .tile-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
       }
-      .children-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 10px;
+      @media (min-width: 520px) {
+        .tile-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       }
       .tile {
-        border-radius: 12px;
-        padding: 10px;
-        background: var(--ha-card-background, var(--card-background-color));
-        border: 1px solid rgba(0, 0, 0, 0.08);
+        min-height: 72px;
+        border-radius: 10px;
+        padding: 9px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.045);
+        display: grid;
+        align-content: space-between;
       }
-      .tile.clickable {
-        cursor: pointer;
-      }
+      .tile.clickable { cursor: pointer; }
       .tile.clickable:focus-visible {
         outline: 2px solid var(--primary-color);
         outline-offset: 2px;
       }
-      .tile-title {
-        font-size: 0.75rem;
-        color: var(--secondary-text-color);
-        margin-bottom: 3px;
-      }
-      .tile-value {
-        font-size: 1.2rem;
-        font-weight: 700;
-      }
-      .tile.ok {
-        background: rgba(64, 181, 73, 0.15);
-        border-color: rgba(64, 181, 73, 0.4);
-      }
-      .tile.ok-dark {
-        background: rgba(28, 94, 32, 0.25);
-        border-color: rgba(28, 94, 32, 0.55);
-      }
-      .tile.warn {
-        background: rgba(245, 151, 60, 0.18);
-        border-color: rgba(245, 151, 60, 0.45);
-      }
-      .tile.points {
-        background: rgba(245, 151, 60, 0.2);
-        border-color: rgba(245, 151, 60, 0.52);
-      }
-      .tile.info {
-        background: rgba(42, 116, 255, 0.18);
-        border-color: rgba(42, 116, 255, 0.45);
-      }
-      .tile.alert {
-        background: rgba(226, 44, 44, 0.18);
-        border-color: rgba(226, 44, 44, 0.45);
-      }
-      .child-card {
-        border-radius: 14px;
-        border: 1px solid rgba(0, 0, 0, 0.1);
+      .tile-title { font-size: 0.72rem; color: var(--secondary-text-color); }
+      .tile-value { font-size: 1.25rem; font-weight: 800; line-height: 1.1; }
+      .tile.ok { background: rgba(48, 209, 88, 0.15); border-color: rgba(48, 209, 88, 0.4); }
+      .tile.ok-dark { background: rgba(31, 143, 69, 0.24); border-color: rgba(31, 143, 69, 0.55); }
+      .tile.warn, .tile.points { background: rgba(255, 159, 10, 0.2); border-color: rgba(255, 159, 10, 0.48); }
+      .tile.info { background: rgba(10, 132, 255, 0.18); border-color: rgba(10, 132, 255, 0.42); }
+      .tile.alert { background: rgba(255, 59, 48, 0.18); border-color: rgba(255, 59, 48, 0.48); }
+      .tile.reward { background: rgba(191, 90, 242, 0.16); border-color: rgba(191, 90, 242, 0.44); }
+      .section {
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.035);
         padding: 10px;
       }
-      .child-name {
-        font-size: 1rem;
-        font-weight: 600;
-        margin-bottom: 8px;
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 9px;
       }
-      .metric-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(70px, 1fr));
-        gap: 8px;
+      .section-head h4 { margin: 0; font-size: 0.95rem; }
+      .segmented {
+        display: inline-grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        border-radius: 9px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.12);
       }
-      .empty {
+      .segmented button {
+        border: 0;
+        background: transparent;
         color: var(--secondary-text-color);
-        padding: 6px 0;
+        padding: 6px 8px;
+        font: inherit;
+        font-size: 0.78rem;
+        cursor: pointer;
       }
+      .segmented button.active {
+        color: var(--primary-text-color);
+        background: rgba(10, 132, 255, 0.2);
+      }
+      .status-list { display: grid; gap: 8px; }
+      .status-row { display: grid; gap: 4px; }
+      .status-label { display: flex; justify-content: space-between; font-size: 0.78rem; }
+      .track { height: 7px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
+      .fill { display: block; height: 100%; border-radius: inherit; }
+      .pie-area {
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr);
+        gap: 10px;
+        align-items: center;
+      }
+      @media (max-width: 480px) {
+        .pie-area { grid-template-columns: 1fr; }
+      }
+      .pie-wrap {
+        position: relative;
+        min-height: 150px;
+        display: grid;
+        place-items: center;
+      }
+      .pie-svg { width: 146px; height: 146px; }
+      .pie-segment { cursor: pointer; transition: stroke-width 160ms ease, opacity 160ms ease; }
+      .pie-segment.active { filter: drop-shadow(0 0 7px rgba(255,255,255,0.28)); }
+      .pie-center {
+        position: absolute;
+        width: 70px;
+        height: 70px;
+        border-radius: 999px;
+        background: rgba(8,10,14,0.72);
+        border: 1px solid rgba(255,255,255,0.12);
+        display: grid;
+        place-content: center;
+        text-align: center;
+      }
+      .pie-center strong { font-size: 1.05rem; line-height: 1; }
+      .pie-center small { color: var(--secondary-text-color); font-size: 0.68rem; }
+      .legend { display: grid; gap: 6px; }
+      .legend-button {
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 9px;
+        background: rgba(255,255,255,0.035);
+        color: var(--primary-text-color);
+        display: grid;
+        grid-template-columns: 10px minmax(0, 1fr) auto;
+        gap: 7px;
+        align-items: center;
+        padding: 7px;
+        text-align: left;
+        cursor: pointer;
+      }
+      .legend-button.active { border-color: rgba(10,132,255,0.52); background: rgba(10,132,255,0.15); }
+      .dot { width: 9px; height: 9px; border-radius: 999px; }
+      .legend-title { font-size: 0.78rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .legend-value { font-size: 0.76rem; color: var(--secondary-text-color); }
+      .empty { color: var(--secondary-text-color); font-size: 0.85rem; }
     `;
     this._root.appendChild(style);
     this._card = document.createElement("ha-card");
@@ -209,78 +269,143 @@ class HomeQuestsOverviewCard extends HTMLElement {
   _render() {
     if (!this._config || !this._hass) return;
     this._ensureRoot();
-
     const data = this._collectData();
-    if (!data) {
-      this._card.innerHTML = `<div class="title">${this._escape(this._config.title)}</div><div class="empty">Keine HomeQuests-Daten gefunden.</div>`;
+    if (!data || !data.child) {
+      this._card.innerHTML = `<div class="shell"><p class="empty">Kein Kind gefunden. Setze in der Karte child_id oder child_name.</p></div>`;
       return;
     }
 
-    const globalOrder = this._resolveOrder(
-      this._config.global_tile_order,
-      GLOBAL_TILE_KEYS,
-      this._config.hidden_global_tiles,
-    );
-    const globalTiles = globalOrder
-      .map((key) => {
-        const definition = GLOBAL_TILE_DEFINITIONS[key];
-        if (!definition) return "";
-        return this._tile(
-          definition.title,
-          data.global[key] ?? 0,
-          definition.severity(data.global),
-          data.global_entities[key],
-        );
-      })
-      .join("");
+    const child = data.child;
+    const order = this._resolveTileOrder();
+    const tiles = order.map((key) => {
+      const definition = CHILD_TILE_DEFINITIONS[key];
+      return definition ? this._tile(definition.title, child[key] ?? 0, definition.severity(child), child.entities[key]) : "";
+    }).join("");
 
-    const childOrder = this._resolveOrder(
-      this._config.child_tile_order,
-      CHILD_TILE_KEYS,
-      this._config.hidden_child_tiles,
-    );
-
-    const childrenHtml = data.children
-      .map((child) => {
-        const childTiles = childOrder
-          .map((key) => {
-            const definition = CHILD_TILE_DEFINITIONS[key];
-            if (!definition) return "";
-            return this._tile(
-              definition.title,
-              child[key] ?? 0,
-              definition.severity(child),
-              child.entities[key],
-            );
-          })
-          .join("");
-
-        return `
-          <div class="child-card">
-            <div class="child-name">${this._escape(child.display_name)}</div>
-            <div class="metric-grid">${childTiles}</div>
-          </div>
-        `;
-      })
-      .join("");
-
-    const subtitle = `${data.children.length} Kind${data.children.length === 1 ? "" : "er"} angezeigt`;
     this._card.innerHTML = `
-      <div class="title">${this._escape(this._config.title)}<br><span style="font-size:0.8rem;color:var(--secondary-text-color);font-weight:400;">${this._escape(subtitle)}</span></div>
-      <div class="section-label">Gesamt</div>
-      <div class="global-grid">${globalTiles || '<div class="empty">Keine globalen Kacheln aktiv.</div>'}</div>
-      <div class="section-label">Kinder</div>
-      <div class="children-grid">${childrenHtml || '<div class="empty">Keine Kinderdaten gefunden.</div>'}</div>
+      <div class="shell">
+        <div class="hero">
+          <div>
+            <p class="eyebrow">${this._escape(this._config.title || "HomeQuests")}</p>
+            <h3 class="name">${this._escape(child.display_name)}</h3>
+          </div>
+          <div class="points-pill">
+            <span>Punkte</span>
+            <strong>${this._escape(child.points_balance)}</strong>
+          </div>
+        </div>
+        <div class="tile-grid">${tiles}</div>
+        ${this._config.show_status_distribution === false ? "" : this._statusSection(child)}
+        ${this._config.show_reward_pie === false ? "" : this._rewardPieSection(child)}
+      </div>
     `;
-
-    this._attachTileClickHandlers();
+    this._wireTileClicks();
+    this._wirePieControls(child);
   }
 
-  _attachTileClickHandlers() {
-    const tiles = this._card.querySelectorAll(".tile[data-entity-id]");
-    for (const tile of tiles) {
+  _statusSection(child) {
+    const total = STATUS_KEYS.reduce((sum, [key]) => sum + Number(child.status_distribution[key] || 0), 0);
+    const rows = STATUS_KEYS.map(([key, label, color]) => {
+      const value = Number(child.status_distribution[key] || 0);
+      const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+      return `
+        <div class="status-row">
+          <div class="status-label"><span>${this._escape(label)}</span><strong>${value} (${pct}%)</strong></div>
+          <div class="track"><span class="fill" style="width:${pct}%;background:${color}"></span></div>
+        </div>
+      `;
+    }).join("");
+    return `<div class="section"><div class="section-head"><h4>Statusverteilung</h4></div><div class="status-list">${rows}</div></div>`;
+  }
+
+  _rewardPieSection(child) {
+    const series = this._rewardSeries(child);
+    const buttons = `
+      <div class="segmented">
+        <button type="button" data-pie-mode="requests" class="${this._pieMode === "requests" ? "active" : ""}">Häufigkeit</button>
+        <button type="button" data-pie-mode="spent" class="${this._pieMode === "spent" ? "active" : ""}">Punkte</button>
+      </div>
+    `;
+    if (!series.length) {
+      return `<div class="section"><div class="section-head"><h4>Belohnungen</h4>${buttons}</div><p class="empty">Noch keine Belohnungsdaten vorhanden.</p></div>`;
+    }
+
+    if (!series.some((entry) => entry.id === this._selectedRewardId)) {
+      this._selectedRewardId = series[0].id;
+    }
+    const total = series.reduce((sum, entry) => sum + entry.value, 0);
+    let offset = 0;
+    const radius = 46;
+    const circumference = 2 * Math.PI * radius;
+    const selected = series.find((entry) => entry.id === this._selectedRewardId) || series[0];
+    const circles = series.map((entry, index) => {
+      const arc = total > 0 ? circumference * (entry.value / total) : 0;
+      const active = entry.id === selected.id;
+      const segment = `<circle class="pie-segment ${active ? "active" : ""}" cx="70" cy="70" r="${radius}" fill="none" stroke="${PIE_COLORS[index % PIE_COLORS.length]}" stroke-width="${active ? 22 : 19}" stroke-dasharray="${arc} ${Math.max(circumference - arc, 0)}" stroke-dashoffset="${-offset}" transform="rotate(-90 70 70)" data-reward-id="${entry.id}"></circle>`;
+      offset += arc;
+      return segment;
+    }).join("");
+    const share = total > 0 ? Math.round((selected.value / total) * 100) : 0;
+    const legend = series.map((entry, index) => {
+      const active = entry.id === selected.id;
+      const itemShare = total > 0 ? Math.round((entry.value / total) * 100) : 0;
+      return `<button type="button" class="legend-button ${active ? "active" : ""}" data-reward-id="${entry.id}"><span class="dot" style="background:${PIE_COLORS[index % PIE_COLORS.length]}"></span><span class="legend-title">${this._escape(entry.title)}</span><span class="legend-value">${entry.value} · ${itemShare}%</span></button>`;
+    }).join("");
+
+    return `
+      <div class="section">
+        <div class="section-head"><h4>Belohnungen</h4>${buttons}</div>
+        <div class="pie-area">
+          <div class="pie-wrap">
+            <svg viewBox="0 0 140 140" class="pie-svg" aria-label="Belohnungsdiagramm">
+              <circle cx="70" cy="70" r="${radius}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="19"></circle>
+              ${circles}
+            </svg>
+            <div class="pie-center"><strong>${this._escape(selected.value)}</strong><small>${share}%</small></div>
+          </div>
+          <div class="legend">${legend}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  _rewardSeries(child) {
+    const source = this._pieMode === "spent" ? child.reward_spent_stats : child.reward_request_stats;
+    return (Array.isArray(source) ? source : []).map((entry) => {
+      if (this._pieMode === "spent") {
+        return {
+          id: Number(entry.reward_id),
+          title: String(entry.reward_title || "Belohnung"),
+          value: Number(entry.points_spent || 0),
+        };
+      }
+      return {
+        id: Number(entry.reward_id),
+        title: String(entry.reward_title || "Belohnung"),
+        value: Number(entry.request_count || 0),
+      };
+    }).filter((entry) => entry.id && entry.value > 0);
+  }
+
+  _wirePieControls(child) {
+    for (const button of this._card.querySelectorAll("[data-pie-mode]")) {
+      button.addEventListener("click", () => {
+        this._pieMode = button.dataset.pieMode === "spent" ? "spent" : "requests";
+        this._selectedRewardId = null;
+        this._render();
+      });
+    }
+    for (const item of this._card.querySelectorAll("[data-reward-id]")) {
+      item.addEventListener("click", () => {
+        this._selectedRewardId = Number(item.dataset.rewardId);
+        this._render();
+      });
+    }
+  }
+
+  _wireTileClicks() {
+    for (const tile of this._card.querySelectorAll(".tile[data-entity-id]")) {
       const entityId = tile.dataset.entityId;
-      if (!entityId) continue;
       tile.addEventListener("click", () => this._openMoreInfo(entityId));
       tile.addEventListener("keydown", (event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -292,80 +417,62 @@ class HomeQuestsOverviewCard extends HTMLElement {
   }
 
   _openMoreInfo(entityId) {
-    this.dispatchEvent(
-      new CustomEvent("hass-more-info", {
-        detail: { entityId },
-        bubbles: true,
-        composed: true,
-      }),
-    );
-  }
-
-  _resolveOrder(configuredOrder, allowedKeys, hiddenKeys) {
-    const hidden = new Set(this._normalizeArrayConfig(hiddenKeys));
-    const order = this._normalizeArrayConfig(configuredOrder)
-      .filter((key) => allowedKeys.includes(key))
-      .filter((key) => !hidden.has(key));
-    const remaining = allowedKeys.filter((key) => !order.includes(key) && !hidden.has(key));
-    return [...order, ...remaining];
+    this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId }, bubbles: true, composed: true }));
   }
 
   _collectData() {
     const states = Object.values(this._hass.states || {});
-    const sensors = states.filter((state) => state.entity_id.startsWith("sensor.") && state.attributes && state.attributes.metric_key);
+    const sensors = states.filter((state) => state.entity_id.startsWith("sensor.") && state.attributes?.metric_key);
     if (!sensors.length) return null;
-
     const familyId = this._resolveFamilyId(sensors);
-    if (familyId === null) return null;
+    const relevant = familyId ? sensors.filter((state) => String(state.attributes.family_id) === String(familyId)) : sensors;
+    const children = this._childrenFromSensors(relevant);
+    return { child: this._selectChild(children) };
+  }
 
-    const relevantSensors = sensors.filter((state) => String(state.attributes.family_id) === String(familyId));
-
-    const global = {
-      tasks_pending_review_total: 0,
-      tasks_overdue_total: 0,
-      pending_reward_redemptions_total: 0,
-    };
-    const globalEntities = {};
+  _childrenFromSensors(sensors) {
     const byChild = new Map();
-
-    for (const state of relevantSensors) {
-      const metricKey = state.attributes.metric_key;
-      const value = this._toNumber(state.state);
+    for (const state of sensors) {
       const userIdRaw = state.attributes.user_id;
-
-      if (userIdRaw === undefined || userIdRaw === null) {
-        if (metricKey in global) {
-          global[metricKey] = value;
-          globalEntities[metricKey] = state.entity_id;
-        }
-        continue;
-      }
-
+      if (userIdRaw === undefined || userIdRaw === null) continue;
       const userId = String(userIdRaw);
       if (!byChild.has(userId)) {
         byChild.set(userId, {
           user_id: userId,
           display_name: state.attributes.display_name || `Kind ${userId}`,
-          points_balance: 0,
-          due_today_tasks: 0,
-          overdue_tasks: 0,
-          tasks_total: 0,
-          pending_reviews: 0,
-          approved_tasks: 0,
           entities: {},
+          reward_request_stats: [],
+          reward_spent_stats: [],
+          status_distribution: {},
         });
       }
       const child = byChild.get(userId);
-      if (metricKey in child) {
-        child[metricKey] = value;
-        child.entities[metricKey] = state.entity_id;
+      const key = state.attributes.metric_key;
+      child[key] = this._toNumber(state.state);
+      child.entities[key] = state.entity_id;
+      if (key === "points_balance") {
+        child.reward_request_stats = Array.isArray(state.attributes.reward_request_stats) ? state.attributes.reward_request_stats : [];
+        child.reward_spent_stats = Array.isArray(state.attributes.reward_spent_stats) ? state.attributes.reward_spent_stats : [];
+        child.status_distribution = state.attributes.status_distribution || {};
+        child.lifetime_earned_points = this._toNumber(state.attributes.lifetime_earned_points);
+        child.lifetime_spent_points = this._toNumber(state.attributes.lifetime_spent_points);
       }
     }
+    return Array.from(byChild.values()).sort((a, b) => a.display_name.localeCompare(b.display_name, "de"));
+  }
 
-    let children = Array.from(byChild.values()).sort((a, b) => a.display_name.localeCompare(b.display_name, "de"));
-    children = this._filterChildren(children);
-
-    return { family_id: familyId, global, global_entities: globalEntities, children };
+  _selectChild(children) {
+    if (!children.length) return null;
+    if (this._config.child_id !== null && this._config.child_id !== undefined && this._config.child_id !== "") {
+      const child = children.find((entry) => String(entry.user_id) === String(this._config.child_id));
+      if (child) return child;
+    }
+    if (this._config.child_name) {
+      const wanted = String(this._config.child_name).toLowerCase();
+      const child = children.find((entry) => String(entry.display_name).toLowerCase() === wanted);
+      if (child) return child;
+    }
+    return children[0];
   }
 
   _resolveFamilyId(sensors) {
@@ -376,37 +483,22 @@ class HomeQuestsOverviewCard extends HTMLElement {
     return first ? String(first.attributes.family_id) : null;
   }
 
-  _filterChildren(children) {
-    const configuredChildren = this._normalizeArrayConfig(this._config.children);
-    if (configuredChildren.length > 0) {
-      const wanted = configuredChildren.map((value) => String(value).toLowerCase());
-      return children.filter((child) => wanted.includes(String(child.user_id).toLowerCase()) || wanted.includes(String(child.display_name).toLowerCase()));
-    }
-
-    const count = Number(this._config.child_count);
-    const safeCount = Number.isFinite(count) && count > 0 ? Math.floor(count) : children.length;
-    return children.slice(0, safeCount);
+  _resolveTileOrder() {
+    const hidden = new Set(this._normalizeArrayConfig(this._config.hidden_tiles));
+    const configured = this._normalizeArrayConfig(this._config.tile_order).filter((key) => CHILD_TILE_KEYS.includes(key));
+    const remaining = CHILD_TILE_KEYS.filter((key) => !configured.includes(key));
+    return [...configured, ...remaining].filter((key) => !hidden.has(key));
   }
 
-  _tile(title, value, severity = "", entityId = null) {
-    const clickableClass = entityId ? "clickable" : "";
-    const dataAttr = entityId ? `data-entity-id="${this._escape(entityId)}"` : "";
-    const tabIndex = entityId ? 'tabindex="0" role="button"' : "";
-    return `
-      <div class="tile ${severity} ${clickableClass}" ${dataAttr} ${tabIndex}>
-        <div class="tile-title">${this._escape(title)}</div>
-        <div class="tile-value">${this._escape(value)}</div>
-      </div>
-    `;
+  _tile(title, value, severity, entityId) {
+    const data = entityId ? `data-entity-id="${this._escape(entityId)}" tabindex="0" role="button"` : "";
+    return `<div class="tile ${this._escape(severity)} ${entityId ? "clickable" : ""}" ${data}><span class="tile-title">${this._escape(title)}</span><strong class="tile-value">${this._escape(value)}</strong></div>`;
   }
 
   _normalizeArrayConfig(value) {
     if (!value) return [];
     if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
-    if (typeof value === "string") {
-      return value.split(",").map((item) => item.trim()).filter(Boolean);
-    }
-    return [];
+    return String(value).split(",").map((item) => item.trim()).filter(Boolean);
   }
 
   _toNumber(value) {
@@ -424,7 +516,7 @@ class HomeQuestsOverviewCard extends HTMLElement {
   }
 }
 
-class HomeQuestsOverviewCardEditor extends HTMLElement {
+class HomeQuestsChildCardEditor extends HTMLElement {
   setConfig(config) {
     this._config = { ...config };
     this._render();
@@ -432,6 +524,9 @@ class HomeQuestsOverviewCardEditor extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
+    if (this._config) {
+      this._render();
+    }
   }
 
   _ensureRoot() {
@@ -439,22 +534,11 @@ class HomeQuestsOverviewCardEditor extends HTMLElement {
     this._root = this.attachShadow({ mode: "open" });
     const style = document.createElement("style");
     style.textContent = `
-      :host {
-        display: block;
-      }
-      .editor {
-        display: grid;
-        gap: 10px;
-      }
-      .field {
-        display: grid;
-        gap: 4px;
-      }
-      label {
-        font-size: 0.9rem;
-        font-weight: 600;
-      }
-      input, textarea {
+      .editor { display: grid; gap: 10px; }
+      .field { display: grid; gap: 4px; }
+      label { font-size: 0.9rem; font-weight: 600; }
+      input,
+      select {
         width: 100%;
         box-sizing: border-box;
         padding: 8px;
@@ -464,10 +548,8 @@ class HomeQuestsOverviewCardEditor extends HTMLElement {
         color: var(--primary-text-color);
         font: inherit;
       }
-      .hint {
-        font-size: 0.78rem;
-        color: var(--secondary-text-color);
-      }
+      .hint { font-size: 0.78rem; color: var(--secondary-text-color); }
+      .toggle-row { display: flex; align-items: center; gap: 8px; }
     `;
     this._root.appendChild(style);
     this._container = document.createElement("div");
@@ -478,83 +560,86 @@ class HomeQuestsOverviewCardEditor extends HTMLElement {
   _render() {
     if (!this._config) return;
     this._ensureRoot();
-
     this._container.innerHTML = `
-      ${this._textField("title", "Titel", this._config.title || "HomeQuests Übersicht")}
-      ${this._numberField("child_count", "Anzahl Kinder", this._config.child_count ?? 3)}
+      ${this._textField("title", "Titel", this._config.title || "HomeQuests")}
+      ${this._selectField("child_id", "Kind", this._config.child_id ?? "", this._childOptions())}
+      ${this._textField("child_name", "Kind-Name Fallback", this._config.child_name ?? "")}
       ${this._textField("family_id", "Family ID (optional)", this._config.family_id ?? "")}
-      ${this._textField("children", "Kinder (CSV, optional)", this._toCsv(this._config.children))}
-      ${this._textField("child_tile_order", "Kind-Kachel-Reihenfolge (CSV)", this._toCsv(this._config.child_tile_order))}
+      ${this._textField("tile_order", "Kachel-Reihenfolge (CSV)", this._toCsv(this._config.tile_order))}
       <div class="hint">Mögliche Werte: ${CHILD_TILE_KEYS.join(", ")}</div>
-      ${this._textField("hidden_child_tiles", "Kind-Kacheln ausblenden (CSV)", this._toCsv(this._config.hidden_child_tiles))}
-      ${this._textField("global_tile_order", "Globale Kachel-Reihenfolge (CSV)", this._toCsv(this._config.global_tile_order))}
-      <div class="hint">Mögliche Werte: ${GLOBAL_TILE_KEYS.join(", ")}</div>
-      ${this._textField("hidden_global_tiles", "Globale Kacheln ausblenden (CSV)", this._toCsv(this._config.hidden_global_tiles))}
+      ${this._textField("hidden_tiles", "Kacheln ausblenden (CSV)", this._toCsv(this._config.hidden_tiles))}
+      ${this._textField("pie_mode", "Pie-Modus: requests oder spent", this._config.pie_mode || "requests")}
+      ${this._toggleField("show_status_distribution", "Statusverteilung anzeigen", this._config.show_status_distribution !== false)}
+      ${this._toggleField("show_reward_pie", "Belohnungsdiagramm anzeigen", this._config.show_reward_pie !== false)}
     `;
-
-    for (const input of this._container.querySelectorAll("input")) {
+    for (const input of this._container.querySelectorAll("input, select")) {
       input.addEventListener("change", (event) => this._valueChanged(event));
     }
   }
 
   _textField(key, label, value) {
-    return `
-      <div class="field">
-        <label for="${key}">${label}</label>
-        <input id="${key}" data-key="${key}" type="text" value="${this._escape(value)}" />
-      </div>
-    `;
+    return `<div class="field"><label for="${key}">${label}</label><input id="${key}" data-key="${key}" type="text" value="${this._escape(value)}" /></div>`;
   }
 
-  _numberField(key, label, value) {
-    return `
-      <div class="field">
-        <label for="${key}">${label}</label>
-        <input id="${key}" data-key="${key}" type="number" min="1" value="${this._escape(value)}" />
-      </div>
-    `;
+  _selectField(key, label, value, options) {
+    const optionMarkup = [
+      { value: "", label: "Automatisch erstes Kind" },
+      ...options,
+    ].map((option) => {
+      const selected = String(value ?? "") === String(option.value) ? "selected" : "";
+      return `<option value="${this._escape(option.value)}" ${selected}>${this._escape(option.label)}</option>`;
+    }).join("");
+    return `<div class="field"><label for="${key}">${label}</label><select id="${key}" data-key="${key}">${optionMarkup}</select></div>`;
+  }
+
+  _toggleField(key, label, checked) {
+    return `<label class="toggle-row"><input data-key="${key}" type="checkbox" ${checked ? "checked" : ""} />${label}</label>`;
+  }
+
+  _valueChanged(event) {
+    const target = event.target;
+    const key = target.dataset.key;
+    if (!key) return;
+    let value = target.type === "checkbox" ? target.checked : target.value;
+    if (["tile_order", "hidden_tiles"].includes(key)) {
+      value = String(value).split(",").map((item) => item.trim()).filter(Boolean);
+    } else if (["child_id", "child_name", "family_id"].includes(key)) {
+      value = String(value).trim() || null;
+    } else if (key === "pie_mode") {
+      value = String(value).trim() === "spent" ? "spent" : "requests";
+    } else if (typeof value === "string") {
+      value = value.trim();
+    }
+    const config = { ...this._config, [key]: value };
+    this._config = config;
+    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config }, bubbles: true, composed: true }));
   }
 
   _toCsv(value) {
     if (!value) return "";
-    if (Array.isArray(value)) return value.join(", ");
-    return String(value);
+    return Array.isArray(value) ? value.join(", ") : String(value);
   }
 
-  _valueChanged(event) {
-    if (!this._config) return;
-    const target = event.target;
-    const key = target.dataset.key;
-    if (!key) return;
-
-    let value = target.value;
-    if (key === "child_count") {
-      const parsed = Number(value);
-      value = Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1;
-    } else if (
-      key === "children" ||
-      key === "child_tile_order" ||
-      key === "hidden_child_tiles" ||
-      key === "global_tile_order" ||
-      key === "hidden_global_tiles"
-    ) {
-      value = value.split(",").map((item) => item.trim()).filter(Boolean);
-    } else if (key === "family_id") {
-      value = value.trim();
-      if (!value) value = null;
-    } else {
-      value = value.trim();
+  _childOptions() {
+    if (!this._hass) return [];
+    const configuredFamilyId = this._config?.family_id;
+    const byUser = new Map();
+    for (const state of Object.values(this._hass.states || {})) {
+      const attrs = state.attributes || {};
+      if (!state.entity_id?.startsWith("sensor.") || !attrs.metric_key || attrs.user_id === undefined || attrs.user_id === null) {
+        continue;
+      }
+      if (configuredFamilyId && String(attrs.family_id) !== String(configuredFamilyId)) {
+        continue;
+      }
+      const userId = String(attrs.user_id);
+      const familySuffix = attrs.family_id !== undefined ? ` · Familie ${attrs.family_id}` : "";
+      byUser.set(userId, {
+        value: userId,
+        label: `${attrs.display_name || `Kind ${userId}`}${familySuffix}`,
+      });
     }
-
-    const newConfig = { ...this._config, [key]: value };
-    this._config = newConfig;
-    this.dispatchEvent(
-      new CustomEvent("config-changed", {
-        detail: { config: newConfig },
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    return Array.from(byUser.values()).sort((a, b) => a.label.localeCompare(b.label, "de"));
   }
 
   _escape(value) {
@@ -567,17 +652,21 @@ class HomeQuestsOverviewCardEditor extends HTMLElement {
   }
 }
 
-if (!customElements.get("homequests-overview-card")) {
-  customElements.define("homequests-overview-card", HomeQuestsOverviewCard);
+if (!customElements.get("homequests-child-card")) {
+  customElements.define("homequests-child-card", HomeQuestsChildCard);
 }
 
-if (!customElements.get("homequests-overview-card-editor")) {
-  customElements.define("homequests-overview-card-editor", HomeQuestsOverviewCardEditor);
+if (!customElements.get("homequests-overview-card")) {
+  customElements.define("homequests-overview-card", HomeQuestsChildCard);
+}
+
+if (!customElements.get("homequests-child-card-editor")) {
+  customElements.define("homequests-child-card-editor", HomeQuestsChildCardEditor);
 }
 
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "homequests-overview-card",
-  name: "HomeQuests Übersicht",
-  description: "Klickbare Kachel-Übersicht für HomeQuests mit Editor-Unterstützung.",
+  type: "homequests-child-card",
+  name: "HomeQuests Kind",
+  description: "Kind-Fokus-Karte mit Aufgaben, Punkten und Belohnungsdiagramm.",
 });

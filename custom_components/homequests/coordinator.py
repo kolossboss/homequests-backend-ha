@@ -386,6 +386,7 @@ def _build_processed_snapshot(
     rewards = deepcopy(raw_snapshot.get("rewards", []))
     redemptions = deepcopy(raw_snapshot.get("redemptions", []))
     balances = deepcopy(raw_snapshot.get("points_balances", []))
+    points_stats = deepcopy(raw_snapshot.get("points_stats", {}))
     reminders = deepcopy(raw_snapshot.get("upcoming_reminders", []))
     me = deepcopy(raw_snapshot.get("me", {}))
 
@@ -415,6 +416,7 @@ def _build_processed_snapshot(
             tasks=tasks,
             balances_by_user=balances_by_user,
             redemptions=redemptions,
+            points_stats=points_stats.get(user_id, {}),
             available_special_tasks=member_special_availability.get(user_id, []),
             now=now,
             tomorrow_start=tomorrow_start,
@@ -496,6 +498,7 @@ def _build_child_stats(
     tasks: list[dict[str, Any]],
     balances_by_user: dict[int, int],
     redemptions: list[dict[str, Any]],
+    points_stats: dict[str, Any],
     available_special_tasks: list[dict[str, Any]],
     now: datetime,
     tomorrow_start: datetime,
@@ -560,6 +563,13 @@ def _build_child_stats(
         for entry in redemptions
         if entry.get("status") == "pending" and int(entry.get("requested_by_id", -1)) == user_id
     ]
+    status_distribution = {
+        "open": sum(1 for task in own_visible_tasks if task.get("status") == TASK_STATUS_OPEN),
+        "submitted": sum(1 for task in own_visible_tasks if task.get("status") == TASK_STATUS_SUBMITTED),
+        "missed_submitted": sum(1 for task in own_visible_tasks if task.get("status") == TASK_STATUS_MISSED_SUBMITTED),
+        "approved": sum(1 for task in own_visible_tasks if task.get("status") == TASK_STATUS_APPROVED),
+        "rejected": sum(1 for task in own_visible_tasks if task.get("status") == TASK_STATUS_REJECTED),
+    }
 
     return {
         "user_id": user_id,
@@ -567,6 +577,14 @@ def _build_child_stats(
         "role": member.get("role"),
         "is_active": bool(member.get("is_active", True)),
         "points_balance": balances_by_user.get(user_id, 0),
+        "lifetime_earned_points": int(points_stats.get("lifetime_earned_points", 0)),
+        "lifetime_spent_points": int(points_stats.get("lifetime_spent_points", 0)),
+        "average_points_per_day": round(float(points_stats.get("average_points_per_day", 0.0)), 1),
+        "average_points_per_week": round(float(points_stats.get("average_points_per_week", 0.0)), 1),
+        "average_points_per_month": round(float(points_stats.get("average_points_per_month", 0.0)), 1),
+        "reward_request_stats": list(points_stats.get("reward_request_stats", [])),
+        "reward_spent_stats": list(points_stats.get("reward_spent_stats", [])),
+        "status_distribution": status_distribution,
         "tasks_total": len(own_visible_tasks),
         "open_tasks": sum(1 for task in own_visible_tasks if task.get("status") == TASK_STATUS_OPEN),
         "rejected_tasks": sum(1 for task in own_visible_tasks if task.get("status") == TASK_STATUS_REJECTED),

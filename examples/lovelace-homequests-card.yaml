@@ -3,33 +3,30 @@
 # Typ: JavaScript-Modul
 # Alternative URL: /homequests_frontend/homequests-overview-card.js
 
-type: custom:homequests-overview-card
-title: HomeQuests Familie
-child_count: 4
+type: custom:homequests-child-card
+title: HomeQuests
+child_name: Mia
 # Farben:
 # - Punkte: orange
-# - Alle Aufgaben: blau
+# - Alle Aufgaben/Verfuegbar/Offen: blau
 # - Bestaetigt: dunkelgruen
 # - Heute faellig: 0=gruen, 1-2=orange, >2=rot
 # - Ueberfaellig: >=1=rot
-# Optional: feste Auswahl statt child_count (user_id oder Name)
-# children:
-#   - 12
-#   - 18
+# Optional: statt child_name kann child_id genutzt werden
+# child_id: 12
 # Optional: Reihenfolge/Ausblenden (auch im visuellen Editor einstellbar)
-# child_tile_order:
+# tile_order:
 #   - points_balance
 #   - due_today_tasks
 #   - overdue_tasks
 #   - tasks_total
+#   - available_tasks
 #   - pending_reviews
 #   - approved_tasks
-# hidden_child_tiles:
+# hidden_tiles:
 #   - pending_reviews
-# global_tile_order:
-#   - tasks_overdue_total
-#   - tasks_pending_review_total
-#   - pending_reward_redemptions_total
-# hidden_global_tiles: []
+# show_status_distribution: true
+# show_reward_pie: true
+# pie_mode: requests
 # Optional: gezielt eine Familie, falls mehrere HomeQuests-Eintraege existieren
 # family_id: 1

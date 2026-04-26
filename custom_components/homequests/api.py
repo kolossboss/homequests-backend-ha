@@ -115,6 +115,10 @@ class HomeQuestsClient:
         response = await self._request("GET", f"/families/{family_id}/points/balances")
         return list(response)
 
+    async def async_get_points_stats(self, family_id: int, user_id: int) -> dict[str, Any]:
+        response = await self._request("GET", f"/families/{family_id}/points/stats/{user_id}")
+        return dict(response)
+
     async def async_get_upcoming_reminders(self, family_id: int, *, window_minutes: int) -> list[dict[str, Any]]:
         response = await self._request(
             "GET",
@@ -133,6 +137,22 @@ class HomeQuestsClient:
             self.async_get_points_balances(family_id),
             self.async_get_upcoming_reminders(family_id, window_minutes=reminder_window_minutes),
         )
+        child_user_ids = [
+            int(member["user_id"])
+            for member in members
+            if member.get("role") == "child" and member.get("user_id") is not None
+        ]
+        points_stats: dict[int, dict[str, Any]] = {}
+        if child_user_ids:
+            stats_results = await asyncio.gather(
+                *(self.async_get_points_stats(family_id, user_id) for user_id in child_user_ids),
+                return_exceptions=True,
+            )
+            for user_id, result in zip(child_user_ids, stats_results, strict=False):
+                if isinstance(result, Exception):
+                    _LOGGER.debug("Could not load HomeQuests points stats for user %s: %s", user_id, result)
+                    continue
+                points_stats[user_id] = dict(result)
         return {
             "me": me,
             "members": members,
@@ -141,6 +161,7 @@ class HomeQuestsClient:
             "rewards": rewards,
             "redemptions": redemptions,
             "points_balances": balances,
+            "points_stats": points_stats,
             "upcoming_reminders": reminders,
         }
 
