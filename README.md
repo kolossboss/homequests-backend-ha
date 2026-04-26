@@ -197,8 +197,13 @@ pie_mode: requests
 - `custom_components/homequests/strings.json`
 - `custom_components/homequests/translations/de.json`
 - `custom_components/homequests/brand/icon.png`
+- `custom_components/homequests/brand/icon@2x.png`
 - `custom_components/homequests/brand/logo.png`
+- `custom_components/homequests/brand/logo@2x.png`
 - `hacs.json`
+
+Hinweis zu Icons in HACS: Home Assistant nutzt lokale Brand-Assets aus `custom_components/homequests/brand/`.
+Die HACS-Listen- und Update-Ansicht nutzt aktuell den Home-Assistant-Brands-CDN. Nach Merge/Deploy des offiziellen Brands-Eintrags kann es wegen CDN-/Browser-Cache bis zu 24 Stunden dauern, im Browser ggf. bis zu 7 Tage.
 
 ## Home Assistant Events fuer Automationen
 
