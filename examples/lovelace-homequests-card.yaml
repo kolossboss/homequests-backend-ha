@@ -1,7 +1,7 @@
 # Resource in Home Assistant unter "Einstellungen -> Dashboards -> Ressourcen":
-# URL: /hacsfiles/homequests-backend-ha/homequests-overview-card.js
+# URL: /homequests_frontend/homequests-child-card.js?v=0.1.14
 # Typ: JavaScript-Modul
-# Alternative URL: /homequests_frontend/homequests-overview-card.js
+# Alte URL /homequests_frontend/homequests-overview-card.js ist nur noch ein Kompatibilitaets-Wrapper.
 
 type: custom:homequests-child-card
 title: HomeQuests
